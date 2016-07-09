@@ -1,0 +1,2 @@
+web: python instacolour_service.py
+poll_job: python instagram_crawler.py
