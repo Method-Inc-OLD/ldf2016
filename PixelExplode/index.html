@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <title>Pixel Explode</title>
+    <link href="css/style.css" rel="stylesheet" type="text/css" />
+
+    <script id="vertex_shader" type="x-shader/x-vertex">
+        attribute vec3 vertexPosition;
+        attribute vec4 vertexColour;
+        attribute float pointSize;
+
+        uniform mat4 uPMatrix;
+	    uniform mat4 uMVMatrix;
+
+        varying vec4 vColour;
+        void main(void) {
+            gl_Position = uPMatrix * uMVMatrix * vec4(vertexPosition, 1.0);
+            //gl_Position = vec4(vertexPosition, 1.0);
+            gl_PointSize = pointSize;
+
+            vColour = vertexColour;
+        }
+    </script>
+
+    <script id="fragment_shader" type="x-shader/x-fragment">
+        precision highp float;
+
+        uniform sampler2D uSampler;
+
+        varying vec4 vColour;
+
+        void main(void) {
+            vec4 texCol = texture2D(uSampler, gl_PointCoord);
+
+            //gl_FragColor = vColour;
+            //gl_FragColor = vec4(texCol.rgb,0.5);
+            gl_FragColor = texCol * vColour;
+        }
+    </script>
+
+    <script src="external/glMatrix.js"></script>
+    <script src="js/index.js"></script>
+</head>
+<body>
+    <div>
+        <canvas id="canvas"></canvas>
+    </div>
+</body>
+</html>
