@@ -1,14 +1,15 @@
 
-from PIL import Image
+# from PIL import Image
 import numpy as np
 import scipy
 import scipy.cluster
+import cv2
+import urllib2
 
-from skimage import data, io, segmentation, color
-from skimage.future import graph
+#from skimage.future import graph
 from collections import namedtuple
 
-import mmcq
+# import mmcq
 
 Point = namedtuple('Point', ('coords', 'n', 'ct'))
 Cluster = namedtuple('Cluster', ('points', 'center', 'n'))
@@ -25,32 +26,45 @@ class ImageUtils(object):
     def PIL2array(img):
         return np.array(img.getdata(), np.uint8).reshape(img.size[1], img.size[0], 3)
 
-    @staticmethod
-    def array2PIL(arr, size):
-        mode = 'RGBA'
-        arr = arr.reshape(arr.shape[0]*arr.shape[1], arr.shape[2])
-        if len(arr[0]) == 3:
-            arr = np.c_[arr, 255*np.ones((len(arr),1), np.uint8)]
-        return Image.frombuffer(mode, size, arr.tostring(), 'raw', mode, 0, 1)
+    # @staticmethod
+    # def array2PIL(arr, size):
+    #     mode = 'RGBA'
+    #     arr = arr.reshape(arr.shape[0]*arr.shape[1], arr.shape[2])
+    #     if len(arr[0]) == 3:
+    #         arr = np.c_[arr, 255*np.ones((len(arr),1), np.uint8)]
+    #     return Image.frombuffer(mode, size, arr.tostring(), 'raw', mode, 0, 1)
 
     @staticmethod
     def show_image(img_data):
-        img = ImageUtils.array2PIL(img_data, (img_data.shape[1], img_data.shape[0]))
-        img.show()
+        cv2.imshow("", img_data)
+        cv2.waitKey(0)
+        # img = ImageUtils.array2PIL(img_data, (img_data.shape[1], img_data.shape[0]))
+        # img.show()
 
     @staticmethod
-    def save_image(file_path, img_data):
-        io.imsave(file_path, img_data)
+    def fetch_image(image_url):
+        user_agent = 'Mozilla/5.0 (Windows NT 6.1; Win64; x64)'
+        headers = {'User-Agent': user_agent}
+        req = urllib2.Request(image_url, headers=headers)
+        res = urllib2.urlopen(req)
+        arr = np.asarray(bytearray(res.read()), dtype=np.uint8)
+        img = cv2.imdecode(arr, -1)
+        return img
+
+    # @staticmethod
+    # def save_image(file_path, img_data):
+    #     io.imsave(file_path, img_data)
 
     @staticmethod
     def load_image(filepath):
-        return scipy.ndimage.imread(filepath)
+        # return scipy.ndimage.imread(filepath)
+        return cv2.imread(filepath)
 
-    @staticmethod
-    def segment_image(img, compactness=30, n_segments=400, kind='avg'):
-        labels1 = segmentation.slic(img, compactness=compactness, n_segments=n_segments)
-        processed_img = color.label2rgb(labels1, img, kind=kind)
-        return processed_img
+    # @staticmethod
+    # def segment_image(img, compactness=30, n_segments=400, kind='avg'):
+    #     labels1 = segmentation.slic(img, compactness=compactness, n_segments=n_segments)
+    #     processed_img = color.label2rgb(labels1, img, kind=kind)
+    #     return processed_img
 
     @staticmethod
     def palette(img):
@@ -129,51 +143,54 @@ class ImageUtils(object):
         peak = codes[index_max]
         color = ''.join(chr(c) for c in peak).encode('hex')
 
+if __name__ == '__main__':
+    print __file__
 
+    test_image = "/Users/josh/Desktop/test_2.jpg"
 
-# ImageUtils.show_image(ImageUtils.load_image("data/test_3.jpg"))
-# ImageUtils.show_image(ImageUtils.segment_image(ImageUtils.load_image("data/test_3.jpg"), compactness=20, n_segments=400))
-#
-# ImageUtils.show_image(ImageUtils.segment_image(ImageUtils.load_image("data/test_3.jpg"), compactness=200, n_segments=100))
-#
-# data = ImageUtils.palette(ImageUtils.load_image("data/test_3.jpg"))
-# print data
-#
-# hist, bin_edges = np.histogram(ImageUtils.load_image("data/test_3.jpg"))
-# print hist
-# print "========"
-# print bin_edges
+    ImageUtils.show_image(ImageUtils.load_image(test_image))
+    ImageUtils.show_image(ImageUtils.segment_image(ImageUtils.load_image(test_image), compactness=20, n_segments=400))
 
-save_file_path = "/Users/josh/Desktop/images/save_{}.jpg"
+    ImageUtils.show_image(ImageUtils.segment_image(ImageUtils.load_image(test_image), compactness=200, n_segments=100))
 
-frames = 10.0
+    data = ImageUtils.palette(ImageUtils.load_image(test_image))
+    print data
 
-s_segments = 10000.
-e_segments = 2.
-segment_steps = (e_segments - s_segments) / frames
+    hist, bin_edges = np.histogram(ImageUtils.load_image(test_image))
+    print hist
+    print "========"
+    print bin_edges
 
-s_compactness = 400.
-e_compactness = 2.
-compactness_steps = (e_compactness - s_compactness) / frames
+    # save_file_path = "/Users/josh/Desktop/images/save_{}.jpg"
+    #
+    # frames = 10.0
+    #
+    # s_segments = 10000.
+    # e_segments = 2.
+    # segment_steps = (e_segments - s_segments) / frames
+    #
+    # s_compactness = 400.
+    # e_compactness = 2.
+    # compactness_steps = (e_compactness - s_compactness) / frames
+    #
+    # img = scipy.misc.imresize(ImageUtils.load_image("data/test_3.jpg"), (400,400))
+    # ImageUtils.save_image(save_file_path.format(0), img)
+    #
+    # for frame in range(int(frames)):
+    #     segments = s_segments + segment_steps * frame
+    #     compactness = s_compactness + compactness_steps * frame
+    #
+    #     img = ImageUtils.segment_image(scipy.misc.imresize(ImageUtils.load_image("data/test_3.jpg"), (400,400)),
+    #                                    compactness=int(compactness), n_segments=int(segments))
+        # ImageUtils.save_image(save_file_path.format(frame + 1), img)
+        #ImageUtils.show_image(ImageUtils.segment_image(scipy.misc.imresize(ImageUtils.load_image("data/test_3.jpg"), (200,200)), compactness=200, n_segments=10000))
 
-img = scipy.misc.imresize(ImageUtils.load_image("data/test_3.jpg"), (400,400))
-ImageUtils.save_image(save_file_path.format(0), img)
+    #print mmcq.get_palette_from_numpy_array(rgb_data=scipy.misc.imresize(ImageUtils.load_image("data/test_4.jpg"), (200, 200)))
 
-for frame in range(int(frames)):
-    segments = s_segments + segment_steps * frame
-    compactness = s_compactness + compactness_steps * frame
+    #ImageUtils.get_points(img=scipy.misc.imresize(ImageUtils.load_image("data/test_3.jpg"), (200, 200)))
 
-    img = ImageUtils.segment_image(scipy.misc.imresize(ImageUtils.load_image("data/test_3.jpg"), (400,400)),
-                                   compactness=int(compactness), n_segments=int(segments))
-    ImageUtils.save_image(save_file_path.format(frame + 1), img)
-    #ImageUtils.show_image(ImageUtils.segment_image(scipy.misc.imresize(ImageUtils.load_image("data/test_3.jpg"), (200,200)), compactness=200, n_segments=10000))
-
-#print mmcq.get_palette_from_numpy_array(rgb_data=scipy.misc.imresize(ImageUtils.load_image("data/test_4.jpg"), (200, 200)))
-
-#ImageUtils.get_points(img=scipy.misc.imresize(ImageUtils.load_image("data/test_3.jpg"), (200, 200)))
-
-# http://charlesleifer.com/blog/using-python-and-k-means-to-find-the-dominant-colors-in-images/
-# img = Image.open("data/test_3.jpg")
-# w, h = img.size
-# color = img.getcolors(w * h)
-# print color
+    # http://charlesleifer.com/blog/using-python-and-k-means-to-find-the-dominant-colors-in-images/
+    # img = Image.open("data/test_3.jpg")
+    # w, h = img.size
+    # color = img.getcolors(w * h)
+    # print color

@@ -1,5 +1,6 @@
 import ConfigParser
 import datetime
+import pymongo
 from pymongo import MongoClient, TEXT
 from pymongo.errors import OperationFailure
 import json
@@ -113,9 +114,15 @@ class DataManager(object):
         try:
             collection = self.get_db()["posts"]
 
-            all_posts = collection.find()
+            all_posts = collection.find().sort(
+                [("datetime", pymongo.DESCENDING)]
+            )
 
             for post in all_posts:
+                del post['_id']
+                # sort rgb_clusters by rgb
+                post['rgb_clusters'].sort(key=lambda x: x, reverse=True)
+                #post['rgb_clusters'] = sorted(post['rgb_clusters'], key=lambda x: x['population'], reverse=True)
                 posts.append(post)
 
         except OperationFailure as e:
@@ -133,6 +140,7 @@ class DataManager(object):
             all_posts = collection.find(projection=["id"])
 
             for post in all_posts:
+                del post["_id"]
                 posts.append(post["id"])
 
         except OperationFailure as e:
@@ -140,10 +148,118 @@ class DataManager(object):
 
         return posts
 
-if __name__ == '__main__':
-    print __file__
+    def get_posts_with_no_cluster_analysis(self):
+        posts = []
 
-    dm = DataManager()
+        try:
+            collection = self.get_db()["posts"]
+
+            all_posts = collection.find({"rgb_clusters": {"$exists": False}})
+
+            for post in all_posts:
+                posts.append(post)
+
+        except OperationFailure as e:
+            utils.Logger.error(e.details)
+
+        return posts
+
+    def get_colour_details_for_all_posts(self):
+        posts = []
+
+        try:
+            collection = self.get_db()["posts"]
+
+            all_posts = collection.find(
+                {"rgb_clusters": {"$exists": True}},
+                projection=["img_src", "likes", "rgb_clusters"]
+            ).sort(
+                [("created_on", pymongo.DESCENDING)]
+            )
+
+            for post in all_posts:
+                post_obj = {
+                    "img_src": post["img_src"],
+                    "rgb_clusters": post["rgb_clusters"]
+                }
+
+                if "likes" in post:
+                    post_obj["likes"] = post["likes"]
+                else:
+                    post_obj["likes"] = 0
+
+                posts.append(post_obj)
+
+        except OperationFailure as e:
+            utils.Logger.error(e.details)
+
+        return posts
+
+    def update_post(self, post):
+
+        try:
+            collection = self.get_db()["posts"]
+            collection.update({'_id': post["_id"]}, {"$set": post}, upsert=False)
+
+        except OperationFailure as e:
+            utils.Logger.error(e.details)
+
+
+# if __name__ == '__main__':
+#     print __file__
+#
+#     dm = DataManager()
+#
+#     posts = dm.get_all_posts()
+#
+#     for i in range(8):
+#         print posts[i]
+
     #print dm.get_authenticated_accounts()[0]["access_token"]
-    print dm.get_all_post_ids()
+    #print dm.get_all_post_ids()
+
+    # from colour_clustering import ColourClustering
+    # posts = dm.get_posts_with_no_cluster_analysis()
+    #
+    # print len(posts)
+    # post = posts[0]
+    # img_src = post["img_src"]
+    # res = ColourClustering.colour_cluster(image_url=img_src, clusters=5)
+    # if res is not None:
+    #     post["rgb_clusters"] = res["colour_clusters"]
+    #     dm.update_post(post)
+
+    # posts = dm.get_colour_details_for_all_posts()
+    # print posts[0]
+    # colours = map(lambda a: a["colour"], posts[0]["rgb_clusters"])
+    #
+    # c = [122,211,12]
+    # distances = [calc_distance(c, colour) for colour in colours]
+    # distances.sort()
+    # print distances[0]
+
+
+    # import math
+    #
+    # c1 = [122, 24, 25]
+    # c2 = [122,12, 12]
+    # c = map(lambda a, b: a-b, c1, c2)
+    # c = map(lambda a: a*a, c)
+    # c = math.sqrt(reduce(lambda x,y: x+y, c))
+    # print c
+
+    # import numpy as np
+    #
+    # print np.array([[123,123,123], [111,111,111]])
+
+
+
+# if __name__ == '__main__':
+#     print __file__
+#
+#     dm = DataManager()
+#     posts = dm.get_all_posts()
+#     #print sorted(posts[0]['rgb_clusters'], key=lambda x: x['population'], reverse=True)
+#     print posts[0]['rgb_clusters']
+
 

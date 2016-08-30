@@ -1,0 +1,85 @@
+body {
+    margin: 0;
+    padding: 0;
+    background: #f3f3f3
+}
+
+section {
+    border-top: 2px solid #e6e6e6;
+    text-align: center;
+    padding: 1.5rem 0
+}
+
+section:first-of-type {
+    border-top: none
+}
+
+.container {
+    margin: 0 auto;
+    max-width: 40rem;
+    width: 95%
+}
+
+header {
+    padding: 4rem 0 2rem 0;
+    background-color: #fff;
+    text-align: center
+}
+
+header p {
+    text-align: center
+}
+
+.url-input{
+    width: 90%;
+    height: 40px;
+    box-sizing: border-box;
+    border-bottom-color: inherit;
+    font-size: larger;
+    padding: 2px;
+}
+
+h2 {
+    color: #e67e39;
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
+    text-transform: uppercase;
+}
+
+h3 {
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
+}
+
+.swatch_canvas{
+    width:60%;
+    height:50px;
+}
+
+.swatch {
+    display: inline-block;
+    margin: 0;
+    background: #ddd
+}
+
+@media (min-width: 40rem) {
+    .swatch {
+        margin-right:-2px
+    }
+}
+
+.get-color .swatch {
+    width: 6rem;
+    height: 3rem
+}
+
+.get-palette .swatch {
+    width: 3rem;
+    height: 2rem
+}
+
+img {
+    max-width: none;
+    width: auto;
+    height: 400px;
+}

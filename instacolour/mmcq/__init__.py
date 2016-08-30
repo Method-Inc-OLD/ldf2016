@@ -3,45 +3,32 @@ from contextlib import contextmanager
 
 from .constant import SIGBITS
 from .quantize import mmcq
+import cv2
+import numpy as np
 
 
 __version__ = (0, 0, 1)
 version = '{}.{}.{}'.format(*__version__)
 
 
-@contextmanager
-def get_palette(color_count=10, quality=10, **kwards):
-    from wand.image import Image, Color
-    if not any(['filename' in kwards, 'blob' in kwards, 'file' in kwards]):
-        raise Exception('One of `filename`, `blob`, `file` MUST required.')
-
-    with Image(**kwards) as image:
-        colors = []
-        image.resize(200, 200)
-        for x in range(0, image.height):
-            for y in range(0, image.width, quality):
-                color = image[x][y]
-                r = color.red_int8
-                g = color.green_int8
-                b = color.blue_int8
-                a = color.alpha_int8
-                if r < 250 and g < 250 and b < 250:
-                    colors.append((r, g, b))
-
-        c_map = mmcq(colors, color_count)
-        yield c_map.palette
-
 #@contextmanager
-def get_palette_from_numpy_array(color_count=10, rgb_data=None):
+def get_palette(image, color_count=16, quality=10, convert_to_rgb=True):
+    (h, w) = image.shape[:2]
+
     colors = []
-    for x in range(0, rgb_data.shape[1]):
-        for y in range(0, rgb_data.shape[0]):
-            rgb = rgb_data[y,x]
-            r = rgb[0]
-            g = rgb[1]
-            b = rgb[2]
-            if r < 250 and g < 250 and b < 250:
-                colors.append((r, g, b))
+
+    if convert_to_rgb:
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+    image = image.reshape((image.shape[0] * image.shape[1], 3))
+
+    for i in range(0, len(image)):
+        r = image[i][0]
+        g = image[i][1]
+        b = image[i][2]
+
+        if r < 250 and g < 250 and b < 250:
+            colors.append((r, g, b))
 
     c_map = mmcq(colors, color_count)
     return c_map.palette

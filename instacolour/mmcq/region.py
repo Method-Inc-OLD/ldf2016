@@ -17,7 +17,8 @@ class Vbox(object):
         self.b1 = b1
         self.b2 = b2
         self.histo = histo
-        self._avg =  None
+        self._avg = None
+        self._avg_total = None
         self._volumn = None
         self._count = None
 
@@ -35,6 +36,7 @@ class Vbox(object):
     def copy(self):
         copied = deepcopy(self)
         copied._avg = None
+        self._avg_total = None
         copied._volumn = None
         copied._count = None
         return copied
@@ -44,6 +46,7 @@ class Vbox(object):
         from .quantize import get_color_index
         if self._avg is None:
             total = 0
+            _total = 0
             mult = 1 << (8 - SIGBITS)
             r_sum = 0
             g_sum = 0
@@ -54,6 +57,7 @@ class Vbox(object):
                         index = get_color_index(i, j, k)
                         hval = self.histo[index]
                         total += hval
+                        _total += 1
                         r_sum += hval * (i + 0.5) * mult
                         g_sum += hval * (j + 0.5) * mult
                         b_sum += hval * (k + 0.5) * mult
@@ -68,6 +72,7 @@ class Vbox(object):
                 b_avg = ~~int(mult * (self.b1 + self.b2 + 1) / 2)
 
             self._avg = r_avg, g_avg, b_avg
+            self._avg_total = _total
 
         return self._avg
 

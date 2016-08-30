@@ -16,8 +16,12 @@ class CMap(object):
     def palette(self):
         return map(lambda d: d['color'], self.vboxes)
 
+    @property
+    def palette_and_population(self):
+        return map(lambda d: {'colour': d['color'], 'population': d['population']}, self.vboxes)
+
     def append(self, item):
-        self.vboxes.append({'vbox': item, 'color': item.average})
+        self.vboxes.append({'vbox': item, 'color': item.average, 'population': item._avg_total})
 
     def __len__(self):
         return len(self.vboxes)

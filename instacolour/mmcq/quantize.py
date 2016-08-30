@@ -9,16 +9,29 @@ __all__ = 'mmcq', 'get_histo', 'get_color_index',
 
 def get_color_index(r, g, b):
     return (r << (2 * SIGBITS)) + (g << SIGBITS) + b
+    # val = r
+    # val = (val << 8) + g
+    # val = (val << 8) + b
+    #
+    # return val
 
 
 def get_histo(colors):
-    histo_size = 1 << (3 * SIGBITS)
-    histo = list([0 for x in range(int(histo_size))])
+    #histo_size = 1 << (3 * SIGBITS)
+    #histo = list([0 for x in range(int(histo_size))])
+    histo = {}
     for color in colors:
         r = color[0] >> RSHIFT
         g = color[1] >> RSHIFT
         b = color[2] >> RSHIFT
+        # r = color[0]
+        # g = color[1]
+        # b = color[2]
         i = get_color_index(r, g, b)
+
+        if i not in histo:
+            histo[i] = 0
+
         histo[i] = histo[i] + 1
 
     return histo
@@ -32,9 +45,12 @@ def vbox_from_colors(colors, histo):
         r = color[0] >> RSHIFT
         g = color[1] >> RSHIFT
         b = color[2] >> RSHIFT
+        # r = color[0]
+        # g = color[1]
+        # b = color[2]
         r_colors.append(r)
-        g_colors.append(r)
-        b_colors.append(r)
+        g_colors.append(g)
+        b_colors.append(b)
 
     return Vbox(min(r_colors),
                 max(r_colors),
@@ -123,7 +139,7 @@ def median_cut(histo, vbox):
             return (vbox1, vbox2)
 
 
-def mmcq(colors, max_color):
+def mmcq(colors, max_color=16):
     if not isinstance(colors, list) or not colors:
         raise Exception('`colors` MUST be list '
                         'that contains items not %s'.format(colors))
@@ -168,7 +184,7 @@ def mmcq(colors, max_color):
     for vbox in pq:
         pq2.append(vbox)
 
-    iter_(pq2, max_color - len(pq2))
+    iter_(pq2, max_color+1 - len(pq2))
     cmap = CMap()
     for vbox in pq2:
         cmap.append(vbox)

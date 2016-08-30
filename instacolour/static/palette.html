@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Palette</title>
+    <link rel="stylesheet" href="css/palette.css">
+    <script src="js/palette.js"></script>
+</head>
+<body>
+
+<header>
+    <div class="container">
+        <h1 class="logo">COLOUR CLUSTERS</h1>
+        <p class="lead">
+            Extract the dominate colours from a image.<br/> Paste in the image URL and hit ENTER.
+        </p>
+
+        <form>
+            <h3>Image URL: </h3><input id="url-input" type="text"
+                                       value="http://www.designboom.com/wp-content/uploads/2016/08/yinka-ilori-a-swimming-pool-of-dreams-clerkenwell-london-design-festival-designboom-600.jpg"/>
+            <h3>Number of Colours: </h3><input id="colours" type="number" value="6"/>
+        </form>
+    </div>
+</header>
+
+<section>
+
+    <div id="dragged-images" class="dragged-images">
+        <div class="image-section dropped-image with-color-thief-output">
+            <div class="image-wrap">
+                <!--<img id="target-image" class="target-image"
+                     src="https://static.dezeen.com/uploads/2016/06/paul-smith-visionary-crazy-golf-trafalgar-square-london-design-festival-dezeen-1568-01.jpg">-->
+
+                <canvas id="target-image-canvas" />
+                <canvas id="bg-target-image-canvas" style="visibility: hidden" />
+            </div>
+            <div class="color-thief-output" style="display: block;">
+                <div class="function get-palette">
+                    <h3 class="function-title">Palette</h3>
+                    <div class="function-output">
+                        <div id="colors" class="colors">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="function get-palette">
+                    <h3 class="function-title">Colour Swatches</h3>
+                    <div class="function-output">
+                        <div id="swatches" class="colors">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</section>
+
+</body>
+</html>

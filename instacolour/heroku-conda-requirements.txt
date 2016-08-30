@@ -1,0 +1,21 @@
+# This file may be used to create an environment using:
+# $ conda create --name <env> --file <this file>
+# platform: linux-64
+readline=6.2=2
+system=5.8=1
+conda=4.1.6=py27_0
+conda-env=2.5.1=py27_0
+opencv=2.4.11=nppy27_0
+openssl=1.0.2h=1
+pip=8.1.2=py27_0
+pycosat=0.6.1=py27_1
+python=2.7.12=1
+pyyaml=3.11=py27_4
+requests=2.10.0=py27_0
+ruamel_yaml=0.11.7=py27_0
+setuptools=23.0.0=py27_0
+sqlite=3.13.0=0
+tk=8.5.18=0
+wheel=0.29.0=py27_0
+yaml=0.1.6=0
+zlib=1.2.8=3

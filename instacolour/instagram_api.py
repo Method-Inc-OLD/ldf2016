@@ -14,6 +14,8 @@ import json
 import platform
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.by import By
+import time
 
 
 class InstagramWrapperAPI(object):
@@ -93,15 +95,26 @@ class InstagramWrapperAPI(object):
                 max_id
             )
 
-        print "polling {}".format(uri)
+        utils.Logger.info("instagram_api.parse_page.polling {}".format(uri))
+        utils.Logger.info("loading PhantomJS from {}".format(self._get_phantomjs_bin()))
 
         items = []
 
         driver = webdriver.PhantomJS(self._get_phantomjs_bin())
         driver.get(uri)
-        driver.implicitly_wait(5)
+
+        if driver is None:
+            raise Exception("Webdriver is null")
+
+        driver.implicitly_wait(10)
         #assert "@l_d_f_official" in driver.title
         html = driver.page_source
+
+        if html is None:
+            raise Exception("html is null")
+
+        utils.Logger.info("loaded html {}".format(html[:20]))
+
         soup = BeautifulSoup(html)
 
         rows = soup.findAll("div", {"class": "_myci9"})
@@ -121,12 +134,7 @@ class InstagramWrapperAPI(object):
                         except KeyError as e:
                             utils.Logger.error("Error parsing alt from item, {}".format(e))
 
-                    item = {
-                        "id": href[3:-1],
-                        "href": href,
-                        "img_src": img_src,
-                        "img_alt": img_alt
-                    }
+                    item = {"id": href[3:-1], "href": href, "img_src": img_src, "img_alt": img_alt}
 
                     item["search_term"] = "username:{}".format(username) if username is not None else "tag:{}".format(tag)
 
@@ -135,9 +143,18 @@ class InstagramWrapperAPI(object):
                     utils.Logger.error("Error parsing item, {}".format(e))
 
         for item in items:
-            self.parse_details_page(driver=driver, item=item)
+            try:
+                if "href" in item and len(item["href"]) > 0:
+                    self.parse_details_page(driver=driver, item=item)
+            except Exception as e:
+                utils.Logger.error("Failed to parse details pahe {} ERROR {}".format(item["href"], e))
 
         driver.close()
+
+        try:
+            driver.quit()
+        except:
+            pass
 
         anchors = soup.findAll("a")
 
@@ -166,8 +183,11 @@ class InstagramWrapperAPI(object):
     def parse_details_page(self, driver, item):
         uri = "https://www.instagram.com{}".format(item["href"])
 
+        utils.Logger.info("parse_details_page {}".format(uri))
+
         driver.get(uri)
-        driver.implicitly_wait(5)
+        driver.implicitly_wait(10)
+        time.sleep(10)
         html = driver.page_source
         soup = BeautifulSoup(html)
 
@@ -181,6 +201,16 @@ class InstagramWrapperAPI(object):
             if likes_span_elem_elem is not None:
                 item["likes"] = likes_span_elem_elem.text
 
+        # using XPath in Chrome
+        # http://stackoverflow.com/questions/22571267/how-to-verify-an-xpath-expression-in-chrome-developers-tool-or-firefoxs-firebug
+        # run $x('<XPath Expression>') in the console
+        try:
+            view_all_button = driver.find_elements(By.XPATH, '//*[@id="react-root"]/section/main/div/div/article/div[2]/ul/li[2]/button')
+            if view_all_button is not None:
+                view_all_button.click()
+        except:
+            pass
+
         ul_elem = soup.find("ul")
         if ul_elem is not None:
             list_items = ul_elem.findAll("li")
@@ -191,7 +221,11 @@ class InstagramWrapperAPI(object):
                 for element in li(text=lambda text: isinstance(text, Comment)):
                     element.extract()
 
-                username = li.find("a").extract().getText()
+                username_a = li.find("a")
+                if username_a is None:
+                    continue
+
+                username = username_a.extract().getText()
                 text_elem = li.find("span")
                 text = text_elem.extract().getText()
                 entity_elems = text_elem.findAll('a')
@@ -230,15 +264,15 @@ class InstagramWrapperAPI(object):
                         item["entities"] = []
 
         driver.back()
-        driver.implicitly_wait(5)
+        time.sleep(5)
 
         return item
 
     def _get_phantomjs_bin(self):
         if platform.system() == "Darwin":
-            return "dev_bin/phantomjs"
+            return utils.get_full_file_path("dev_bin/phantomjs")
         else:
-            return "bin/phantomjs"
+            return utils.get_full_file_path("bin/phantomjs")
 
 
 if __name__ == '__main__':

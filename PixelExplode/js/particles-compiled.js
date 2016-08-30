@@ -36,6 +36,17 @@ function getTextFromElement(elementId) {
     return str;
 }
 
+class ParticleForce {
+
+    constructor(index, originPoint) {
+        this.vertexIndex = index;
+        this.originPos = originPoint;
+        this.targetPos = originPoint;
+        this.force = { x: 0, y: 0, z: 0 };
+        this.attraction = 10.0;
+    }
+}
+
 class Engine {
 
     constructor(canvas) {
@@ -48,14 +59,15 @@ class Engine {
         this.lastUpdateTimestamp = 0;
 
         this.camera = new Camera("camera");
-        this.camera.move(0, 0, 850);
+        this.camera.move(0, 0, 550);
         this.camera.type = CameraType.Perspective;
         this.models = [];
 
-        this.force = 10.0;
         this.radius = 20;
 
-        this.targetPositions = [[0, -100, 0], [0, 0, 0], [0, 100, 0]];
+        this.targetPositions = [];
+
+        this.particleForces = [];
 
         this.onAnimationFrame = this.onAnimationFrame.bind(this);
         this.onResize = this.onResize.bind(this);
@@ -63,6 +75,7 @@ class Engine {
         this.onDrop = this.onDrop.bind(this);
         this.onCancelDrag = this.onCancelDrag.bind(this);
         this.onFileUploaded = this.onFileUploaded.bind(this);
+        this.onFetchedImageDetails = this.onFetchedImageDetails.bind(this);
 
         window.addEventListener('dragover', this.onCancelDrag, false);
         window.addEventListener('dragenter', this.onCancelDrag, false);
@@ -134,7 +147,7 @@ class Engine {
 
             if (model.tag == "particles") {
                 this.updateParticles(et, model.mesh);
-                //model.rotate(0,et * 0.1, 0);
+                model.rotate(0, et * 0.1, 0);
             }
 
             model.update(et);
@@ -183,6 +196,7 @@ class Engine {
 
         return false;
     }
+
     onFileUploaded(event) {
         if (event.target.result.match(/^data:image/)) {
 
@@ -200,8 +214,11 @@ class Engine {
 
     updateParticles(et, mesh) {
 
+        var idx = 0;
         for (var i = 0; i < mesh.vertexData.length; i += mesh.stride) {
-            //debugger;
+
+            var particleForce = this.particleForces[idx];
+            idx++;
 
             var x = mesh.vertexData[i];
             var y = mesh.vertexData[i + 1];
@@ -214,33 +231,18 @@ class Engine {
 
             var size = mesh.vertexData[i + 7];
 
-            var targetIndex = 0;
-            if (r > g && r > b) {
-                targetIndex = 0;
-            } else if (g > r && g > b) {
-                targetIndex = 1;
-            } else {
-                targetIndex = 2;
-            }
-
-            var targetPosition = this.targetPositions[targetIndex];
-            var tx = targetPosition[0];
-            var ty = targetPosition[1];
-            var tz = targetPosition[2];
-
             var source = vec3.create([x, y, z]);
-            var target = vec3.create([tx, ty, tz]);
+            var target = particleForce.targetPos;
             var diff = vec3.create();
             vec3.subtract(target, source, diff);
             var dis = vec3.length(diff);
-            if (dis > this.radius) {
-                var dir = vec3.create();
-                vec3.normalize(diff, dir);
 
-                mesh.vertexData[i] += this.force * et * dir[0];
-                mesh.vertexData[i + 1] += this.force * et * dir[1];
-                mesh.vertexData[i + 2] += this.force * et * dir[2];
-            }
+            var dir = vec3.create();
+            vec3.normalize(diff, dir);
+
+            mesh.vertexData[i] += particleForce.attraction * et * dir[0];
+            mesh.vertexData[i + 1] += particleForce.attraction * et * dir[1];
+            mesh.vertexData[i + 2] += particleForce.attraction * et * dir[2];
         }
 
         mesh.setVertexBuffer(this.gl);
@@ -251,6 +253,10 @@ class Engine {
             return;
         }
 
+        this.fetchImageDetails(image, this.onFetchedImageDetails);
+    }
+
+    fetchImageDetails(image, callback) {
         var padding = Math.max(this.canvas.width * 0.1, this.canvas.height * 0.1) * 2;
 
         var ratio = 1. / Math.max(image.width / (this.canvas.width - padding), image.height / (this.canvas.height - padding));
@@ -261,30 +267,72 @@ class Engine {
         tmpCanvas.width = scaledWidth;
         tmpCanvas.height = scaledHeight;
 
-        console.log("ratio " + ratio + ", scaledWidth " + scaledWidth + ", scaledheight" + scaledHeight);
-
         var tmpContext = tmpCanvas.getContext("2d");
         tmpContext.drawImage(image, 0, 0, tmpCanvas.width, tmpCanvas.height);
 
         var pixels = tmpContext.getImageData(0, 0, tmpCanvas.width, tmpCanvas.height);
-        var step = 5.;
-        var density = step * 0.7;
+
+        var packet = "image_url=" + encodeURIComponent(tmpCanvas.toDataURL("image/png"));
+        packet += "&clusters=" + 6;
+
+        var serviceURL = "https://instacolour.herokuapp.com/api/colourclusters";
+
+        var xhr = this.createCORSRequest("POST", serviceURL);
+        xhr.onload = function (e) {
+            console.log(xhr.response);
+            if (xhr.response != null) {
+                var jsonObj = JSON.parse(xhr.response);
+                if (jsonObj.hasOwnProperty("colour_clusters")) {
+                    var colourClusters = jsonObj["colour_clusters"];
+
+                    callback(pixels, tmpCanvas.width, tmpCanvas.height, colourClusters);
+                }
+            }
+        };
+
+        xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded;charset=utf-8");
+        xhr.send(packet);
+    }
+
+    createCORSRequest(method, url) {
+        var xhr = new XMLHttpRequest();
+        if ("withCredentials" in xhr) {
+            xhr.open(method, url, true);
+        } else if (typeof XDomainRequest != "undefined") {
+            xhr = new XDomainRequest();
+            xhr.open(method, url);
+        } else {
+            console.error("CORS not supported by browser");
+            xhr = null;
+        }
+        return xhr;
+    }
+
+    onFetchedImageDetails(pixels, width, height, colourClusters) {
+
+        this.models.length = 0;
+        this.particleForces.length = 0;
+
+        this.generateTargetPositions(colourClusters.length);
+
+        var step = 4.;
+        var density = step * 0.9;
         var x = 0,
             y = 0;
 
-        var ox = -tmpCanvas.width / 2;
-        var oy = -tmpCanvas.height / 2;
+        var ox = -width / 2;
+        var oy = -height / 2;
 
         var mesh = new Mesh("particles");
         mesh.addVertextDefinition("vertexPosition", 3, this.gl.FLOAT);
         mesh.addVertextDefinition("vertexColour", 4, this.gl.FLOAT);
         mesh.addVertextDefinition("pointSize", 1, this.gl.FLOAT);
 
-        for (y = 0; y < tmpCanvas.height; y += step) {
-            for (x = 0; x < tmpCanvas.width; x += step) {
+        for (y = 0; y < height; y += step) {
+            for (x = 0; x < width; x += step) {
 
-                var flippedY = tmpCanvas.height - y;
-                var pixelIndex = (flippedY * tmpCanvas.width + x) * 4;
+                var flippedY = height - y;
+                var pixelIndex = (flippedY * width + x) * 4;
 
                 if (pixels.data[pixelIndex + 3] > 0 || true) {
                     // add particle position
@@ -298,6 +346,14 @@ class Engine {
                     mesh.vertexData.push(pixels.data[pixelIndex + 3] / 255.0); // a
 
                     mesh.vertexData.push(density); // pixel size
+
+                    // associate particle force
+                    var idx = this.getClusterIndexForPixel(pixels.data[pixelIndex], pixels.data[pixelIndex + 1], pixels.data[pixelIndex + 2], colourClusters);
+
+                    var partcileForce = new ParticleForce(pixelIndex, vec3.create([ox + x, oy + y, 0.0]));
+                    partcileForce.targetPos = this.randomSpherePoint(this.targetPositions[idx], this.radius);
+                    //partcileForce.targetPos = this.targetPositions[idx];
+                    this.particleForces.push(partcileForce);
                 }
             }
         }
@@ -314,6 +370,73 @@ class Engine {
         var texture = Texture.createTexture(this.gl, "particle_tex", "images/particle.png");
         var model = new Model("particles", mesh, material, texture);
         this.models.push(model);
+    }
+
+    /*
+     Returns a random point of a sphere, evenly distributed over the sphere.
+     The sphere is centered at (x0,y0,z0) with the passed in radius.
+     The returned point is returned as a three element array [x,y,z].
+     */
+    randomSpherePoint(origin, radius) {
+        var x0 = origin[0];
+        var y0 = origin[1];
+        var z0 = origin[2];
+
+        var u = Math.random();
+        var v = Math.random();
+        var theta = 2 * Math.PI * u;
+        var phi = Math.acos(2 * v - 1);
+        var x = x0 + radius * Math.sin(phi) * Math.cos(theta);
+        var y = y0 + radius * Math.sin(phi) * Math.sin(theta);
+        var z = z0 + radius * Math.cos(phi);
+
+        return vec3.create([x, y, z]);
+    }
+
+    getClusterIndexForPixel(r, g, b, clusters) {
+        var idx = -1;
+        var dis = -1;
+        var sourceCol = vec3.create([r, g, b]);
+        for (var i = 0; i < clusters.length; i++) {
+            var clusterCol = vec3.create(clusters[i]['colour']);
+            var cDis = vec3.distance(sourceCol, clusterCol);
+            if (idx == -1 || cDis < dis) {
+                dis = cDis;
+                idx = i;
+            }
+        }
+
+        return idx;
+    }
+
+    generateTargetPositions(numClusters) {
+        while (this.targetPositions.length != numClusters) {
+            // this.radius
+            var targetPosition = this.randomSpherePoint(vec3.create([0, 0, 0]), 100);
+
+            // make sure we don't intersect any other position
+            var collidiesWithExistingSphere = false;
+            for (var i = 0; i < this.targetPositions.length; i++) {
+                var dis = vec3.distance(this.targetPositions[i], targetPosition);
+                if (dis <= this.radius) {
+                    collidiesWithExistingSphere = true;
+                }
+            }
+
+            if (!collidiesWithExistingSphere) {
+                this.targetPositions.push(targetPosition);
+            }
+        }
+        for (var i = 0; i < numClusters; i++) {
+            // this.targetPositions.push(
+            //     vec3.create([
+            //         Math.floor((Math.random() * 100) + 1),
+            //         Math.floor((Math.random() * 100) + 1),
+            //         Math.floor((Math.random() * 100) + 1)
+            //     ])
+            // )
+
+        }
     }
 
     onOrientationChange() {
@@ -823,4 +946,4 @@ class Shader {
     }
 }
 
-//# sourceMappingURL=index-compiled.js.map
+//# sourceMappingURL=particles-compiled.js.map
