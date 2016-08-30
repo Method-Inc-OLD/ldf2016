@@ -38,7 +38,7 @@ class BasePixelRendererLevel{
     return pixelArray.size();     
   }
   
-  void draw(long et){
+  void update(long et, PImageBuffer srcImage, PImageBuffer dstImage){
     // override  
   }
   
@@ -50,7 +50,7 @@ class BasePixelRendererLevel{
     // override
   }
   
-  boolean isFinished(){
+  boolean isAnimating(){
     return true;  
   }
 }
@@ -63,7 +63,7 @@ class FadeTilePixelRendererLevel extends BasePixelRendererLevel{
     super();   
   }
   
-  void draw(long et){
+  void update(long et, PImageBuffer srcImage, PImageBuffer dstImage){
     int index = 0; 
     for(int r=0; r<rows; r++){
       for(int c=0; c<cols; c++){
@@ -71,20 +71,20 @@ class FadeTilePixelRendererLevel extends BasePixelRendererLevel{
         
         if(!frozen){
           if(index == currentPixelIndex){
-            pixelArray.get(index).age += et;
+            pixelArray.get(index).age += et;            
             float t = (float)pixelArray.get(index).age/(float)(pixelArray.get(index).speed);
             t = max(min(1.0f, t), 0.0f);
             
-            if(t == 1.0f){
-              pixelArray.get(index).alpha = 255; 
-              currentPixelIndex += 1;
+            //println("t " + t + ", age " + pixelArray.get(index).age + ", index " + index);  
+            
+            if(isApproximately(t,1.0f)){
+              pixelArray.get(index).update(srcImage, dstImage, 1.0f);  
+              currentPixelIndex += 1; 
             } else{
-              pixelArray.get(index).alpha = (int)(255 * t);
+              pixelArray.get(index).update(srcImage, dstImage, t);
             } 
           }
         }
-        
-        pixelArray.get(index).draw(); 
       }
     }    
   }
@@ -107,8 +107,8 @@ class FadeTilePixelRendererLevel extends BasePixelRendererLevel{
     pixelArray.clear();      
   }
   
-  boolean isFinished(){
-    return currentPixelIndex >= size();  
+  boolean isAnimating(){
+    return currentPixelIndex < size();  
   }
 }
 
@@ -132,11 +132,11 @@ class GrowPixelRendererLevel extends BasePixelRendererLevel{
     //}
   }
   
-  void draw(long et){    
-    for(int i=0; i<gorwn.size(); i++){
-      PixelIndex index = gorwn.get(i);        
-      pixelArray.get(getArrayIndex(index)).draw(); 
-    }
+  void update(long et, PImageBuffer srcImage, PImageBuffer dstImage){    
+    //for(int i=0; i<gorwn.size(); i++){
+    //  PixelIndex index = gorwn.get(i);        
+    //  pixelArray.get(getArrayIndex(index)).draw(); 
+    //}
     
     for(int i=0; i<growing.size(); i++){
       PixelIndex pixIndex = growing.get(i);
@@ -148,17 +148,15 @@ class GrowPixelRendererLevel extends BasePixelRendererLevel{
         t = max(min(1.0f, t), 0.0f);
           
         if(t == 1.0f){
-          pixelArray.get(index).alpha = 255; 
+          pixelArray.get(index).update(srcImage, dstImage, 1.0f);
           gorwn.add(pixIndex); 
           growing.remove(i); 
           
           addNeighboursForPixelAtIndex(pixIndex);
         } else{
-          pixelArray.get(index).alpha = (int)(255 * t);
+          pixelArray.get(index).update(srcImage, dstImage, t);
         }   
       }
-        
-      pixelArray.get(index).draw(); 
     }    
   }
   
@@ -263,8 +261,8 @@ class GrowPixelRendererLevel extends BasePixelRendererLevel{
     pixelArray.clear();     
   }
   
-  boolean isFinished(){
-    return gorwn.size() == size(); 
+  boolean isAnimating(){
+    return gorwn.size() != size(); 
   }
   
 }

@@ -1,16 +1,11 @@
 enum State{
   Undefined, 
   TransitionToNewImage, 
-  Ready
+  IdleOut,
+  IdleIn, 
+  TransitioningIn, 
+  TransitioningOut
 };
-
-enum ProximityRange{
-  Undefined, 
-  Close, 
-  Medium,
-  MediumFar, 
-  Far
-}
 
 enum PixelRendererLevelType{
   FadeTile, 
@@ -69,12 +64,28 @@ class Rect{
     this.h = h; 
   }
   
+  int getX(){
+    return x;   
+  }
+  
   int getX2(){
     return x + w;     
   }
   
+  int getY(){
+    return y; 
+  }  
+  
   int getY2(){
     return y + h;   
+  }
+  
+  int getWidth(){
+    return w;   
+  }
+  
+  int getHeight(){
+    return h;   
   }
 }
 

@@ -30,8 +30,6 @@ class Pixel extends Rect{
   
   color targetColor; 
   
-  int alpha = 0;
-  
   long age = 0; 
   
   float speed = 1; 
@@ -40,21 +38,31 @@ class Pixel extends Rect{
     super(x, y, w, h);  
     
     this.targetColor = targetColor; 
-    this.alpha = 0; 
   }
   
-  void draw(){       
-    if(alpha < 20){
-      return;   
+  void update(PImageBuffer srcImage, PImageBuffer dstImage, float t){
+    int imageW = srcImage.width; 
+    int imageH = srcImage.height;  
+    
+    for(int cy=this.y; cy<this.y+this.h; cy++){
+      for(int cx=this.x; cx<this.x+this.w; cx++){
+        if(cx < 0 || cx >= imageW || cy < 0 || cy>= imageH){
+          continue;   
+        }
+        
+        int index = (cy * imageW) + cx; 
+        color c1 = srcImage.getPixel(index); 
+        color c2 = targetColor; 
+        color c = lerpColour(c1, c2, t);
+        //c = color(255, 255, 255); 
+        dstImage.setPixel(index, c); 
+      }
     }
     
-    stroke(0,0,0,0);        
-    fill(red(targetColor), green(targetColor), blue(targetColor), alpha); 
-    rect(x,y,w,h);
-  }
+    dstImage.updatePixels(getX(), getY(), getWidth(), getHeight());
+  }    
   
   void reset(){
-      alpha = 0; 
       age = 0; 
   }
   
@@ -68,7 +76,7 @@ class Pixel extends Rect{
   
   float getBlue(){
     return blue(targetColor);  
-  }  
+  }   
   
   boolean isGrey(){
     return (getRed() == getGreen() &&  getGreen() == getBlue());   
@@ -77,9 +85,11 @@ class Pixel extends Rect{
 
 class PixelRenderer{
   
-  ImageDetails imageDetails;    
+  ImageDetails imageDetails;
+  PImageBuffer srcImageBuffer; 
+  PImageBuffer dstImageBuffer;
   
-  boolean uniformPixels = true;
+  boolean uniformPixels = false;
   
   boolean randomlyOffsetPixels = true; 
   
@@ -92,24 +102,26 @@ class PixelRenderer{
   
   float defaultSpeed = 0.2f; 
   
-  PixelRenderer(ImageDetails imageDetails){
+  PixelRenderer(ImageDetails imageDetails, PImageBuffer dstImageBuffer){
     this.imageDetails = imageDetails; 
+    this.dstImageBuffer = dstImageBuffer; 
+    this.srcImageBuffer = new PImageBuffer(this.dstImageBuffer); 
   }  
   
   void freeze(){
       getCurrentPixelRenderer().frozen = true; 
   }
   
-  void draw(long et){
+  void update(long et){
     if(levels.size() == 0){
       return;   
     }
     
-    if(getPreviousPixelRenderer() != null){
-      getPreviousPixelRenderer().draw(et);   
-    }
-    
-    getCurrentPixelRenderer().draw(et);     
+    getCurrentPixelRenderer().update(et, srcImageBuffer, dstImageBuffer);     
+  }
+  
+  PImage getImage(){
+    return dstImageBuffer.pImage; 
   }
   
   void reset(){      
@@ -124,11 +136,10 @@ class PixelRenderer{
       previousLevel = -1; 
   }
   
-  void fillWithMainColour(){
-    stroke(0,0,0,0); 
-    fill(imageDetails.getRed(),imageDetails.getGreen(),imageDetails.getBlue());
-    rect(0,0,width,height);  
-  }
+  //void fillWithMainColour(){    
+  //  dstImageBuffer.fill(imageDetails.getRed(),imageDetails.getGreen(),imageDetails.getBlue());
+  //  dstImageBuffer.rect(0, 0, width, height);  
+  //}
   
   BasePixelRendererLevel getCurrentPixelRenderer(){
     return levels.get(currentLevel); 
@@ -145,17 +156,28 @@ class PixelRenderer{
     createLevelFromMainColour(xres, yres, defaultSpeed); 
   }
   
+  float getWidth(){
+    return dstImageBuffer.width; 
+  }
+  
+  float getHeight(){
+    return dstImageBuffer.height; 
+  }
+  
   void createLevelFromMainColour(float xres, float yres, float speed){
     BasePixelRendererLevel level = createPixelRendererLevelFromType(PixelRendererLevelType.FadeTile);
     level.speed = speed; 
     
-    int w = (int)(width / xres); 
-    int h = (int)(height / yres); 
+    int w = 1; 
+    int h = 1; 
     
+    w = (int)(getWidth() / xres); 
+    h = (int)(getHeight() / yres);
+      
     if(uniformPixels){
       w = min(w,h); 
       h = min(w,h); 
-    }
+    }                
     
     float randomOX = w * randomOffsetPerc;
     float randomOY = h * randomOffsetPerc; 
@@ -163,9 +185,10 @@ class PixelRenderer{
     int row = 0; 
     int col = 0; 
     
-    for(int y=0; y<height; y+=h){      
-      for(int x=0; x<width; x+=w){        
-        Pixel pix = new Pixel(x, y, w, h, imageDetails.myColour);
+    for(int y=0; y<getHeight(); y+=h){      
+      for(int x=0; x<getWidth(); x+=w){        
+        Pixel pix = new Pixel(x, y, w, h, imageDetails.myColour); 
+        
         pix.col = col;
         pix.row = row;
         
@@ -176,8 +199,8 @@ class PixelRenderer{
         if(randomlyOffsetPixels && random(0, 100) > 80){
           float ox = random(-randomOX, randomOX);
           float oy = random(-randomOY, randomOY);
-          pix.x += ox; 
-          pix.y += oy;                             
+          //pix.x += ox; 
+          //pix.y += oy;                             
         }     
         
         col += 1;
@@ -198,8 +221,8 @@ class PixelRenderer{
     BasePixelRendererLevel level = createPixelRendererLevelFromType(PixelRendererLevelType.Grow); 
     level.speed = speed; 
     
-    int w = (int)(width / xres); 
-    int h = (int)(height / yres); 
+    int w = (int)(getWidth() / xres); 
+    int h = (int)(getHeight() / yres); 
     
     if(uniformPixels){
       w = min(w,h); 
@@ -214,19 +237,10 @@ class PixelRenderer{
     int row = 0; 
     int col = 0; 
     
-    for(int y=0; y<height; y+=h){           
-      for(int x=0; x<width; x+=w){
-        // translate into image space 
-        float sx = (float)image.width / (float)width; 
-        float sy = (float)image.height / (float)height;
-        
-        int ix = (int)(sx * x); 
-        int iy = (int)(sy * y);
-        int iw = (int)(min(sx * w, sy * h));
-        int ih = iw; 
-        
+    for(int y=0; y<getHeight(); y+=h){           
+      for(int x=0; x<getWidth(); x+=w){                
         // PImage image, int x, int y, int w, int h
-        color pixelColour = getAverageColourFromImagePatch(image, ix, iy, iw, ih); 
+        color pixelColour = getAverageColourFromImagePatch(image, x, y, w, h); 
         
         Pixel pix = new Pixel(x, y, w, h, pixelColour);        
         pix.col = col;
@@ -258,12 +272,21 @@ class PixelRenderer{
   }
   
   public void setLevel(int level){
+    if(level < 0 || level >= size()){
+      return;   
+    }
+    
+    println("Updating to level " + level);
+    
     previousLevel = currentLevel; 
     currentLevel = level;
     
     if(previousLevel >= 0 && previousLevel<size()){
       levels.get(previousLevel).frozen = true;   
     }
+    
+    this.srcImageBuffer.copyPixels(dstImageBuffer);
+    this.srcImageBuffer.updatePixels(); 
     
     levels.get(currentLevel).reset();      
   }
@@ -273,6 +296,6 @@ class PixelRenderer{
   }
   
   boolean isAnimating(){
-    return !getCurrentPixelRenderer().isFinished(); 
+    return getCurrentPixelRenderer().isAnimating(); 
   }  
 }

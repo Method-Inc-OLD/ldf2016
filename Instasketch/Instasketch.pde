@@ -1,12 +1,6 @@
 
-final String URL_NEXTIMAGE = "http://instacolour.herokuapp.com/api/nextimage?randomly_select_from_top=100"; 
-final String URL_COLOURISED_IMAGE = "http://instacolour.herokuapp.com/api/colourise"; 
-
-int PALETTE_INDEX = 3;
-final long IMAGE_UPDATE_FREQUENCY = 120000; 
-
-final int IMAGE_DOWNSAMPLING = 2; 
-
+ int PALETTE_INDEX = 3;
+ 
 boolean fetchingImage = false; 
 
 PImage sourceImage = null; 
@@ -17,8 +11,8 @@ long lastImageTimestamp = millis();
 
 long currentProximityDistance = 0;  
 
-PixelRenderer previousPixelRenderer; 
 PixelRenderer currentPixelRenderer; 
+PImageBuffer offscreenBuffer; 
 
 State previousState = State.Undefined;
 State currentState = State.Undefined;
@@ -27,8 +21,6 @@ ProximityRange previousProximityRange = ProximityRange.Far;
 ProximityRange currentProximityRange = ProximityRange.Far; 
 
 long tmpTimestamp = 0;  
-
-int dir = 1; 
 
 UltrasonicSensor ultrasonicSensor; 
 
@@ -48,20 +40,23 @@ void setup() {
 }   
 
 void initDrawImages(){
-  sourceImage = createImage(width/IMAGE_DOWNSAMPLING, width/IMAGE_DOWNSAMPLING, RGB);
+  float aspectRatio = (float)height/(float)width;
+  float w = min(OFFSCREEN_BUFFER_MAX_WIDTH, width); 
+  float h = w * aspectRatio; 
+  
+  println("initDrawImages - creating image with dimensions w " + w + "," + h); 
+   
+  sourceImage = createImage((int)w, (int)h, RGB);  
+  offscreenBuffer = new PImageBuffer((int)w, (int)h, RGB); 
+  
+  for(int i=0; i<offscreenBuffer.length; i++){
+      offscreenBuffer.setPixel(i, color(255, 255, 255));
+      sourceImage.pixels[i] = color(255, 255, 255); 
+  }
 }
 
 void initUltrasonicSensor(){
   ultrasonicSensor = new UltrasonicSensor();   
-}
-
-void setCurrentPixelRenderer(PixelRenderer pixelRenderer){
-  if(currentPixelRenderer != null){
-    currentPixelRenderer.freeze(); 
-    previousPixelRenderer = currentPixelRenderer; 
-  }
-  
-  currentPixelRenderer = pixelRenderer; 
 }
 
 void setState(State state){
@@ -74,21 +69,37 @@ void setState(State state){
 
 void onStateChanged(){
   println("onStateChanged " + currentState); 
-  
-  if(currentState == State.TransitionToNewImage){
-    dir = 1;   
-  }   
+}
+
+void setPixelRenderer(PixelRenderer pixelRenderer){
+  currentPixelRenderer = pixelRenderer;  
+  if(currentPixelRenderer != null){
+    currentPixelRenderer.setLevel(0);   
+  }
 }
 
 void setProximityRange(ProximityRange proximityRange){
   previousProximityRange = currentProximityRange; 
   currentProximityRange = proximityRange;
-  
-  onProximityRangeChanged(); 
+    
+  if(previousProximityRange != currentProximityRange){
+    onProximityRangeChanged();  
+  }  
 }
 
 void onProximityRangeChanged(){
+  println("onProximityRangeChanged " + currentProximityRange); 
+  if(currentProximityRange == ProximityRange.Far || currentProximityRange == ProximityRange.MediumFar){
+    if(currentState != State.IdleOut && currentState != State.TransitioningOut){
+      setState(State.TransitioningOut);     
+    }      
+  }
   
+  if(currentProximityRange == ProximityRange.Medium || currentProximityRange == ProximityRange.Close){
+    if(currentState != State.IdleIn && currentState != State.TransitioningIn){
+      setState(State.TransitioningIn);     
+    }      
+  }
 }
 
 void markStartTime(){
@@ -103,59 +114,58 @@ long markEndTime(){
 
 void draw() {    
   long et = millis() - lastUpdateTimestamp;
+  lastUpdateTimestamp = millis(); 
   
   imageUpdateCheck(); 
   
   distanceUpdateCheck(); 
+
+  updateState(); 
   
-  if(currentState == State.TransitionToNewImage){ 
-    drawTransitionToNewImage(et);     
-  } else if(currentState == State.Ready){ 
-    drawReady(et);     
+  if(currentPixelRenderer != null){
+    currentPixelRenderer.update(et);
+    
+    // draw 
+    image(currentPixelRenderer.getImage(), 0, 0, width, height);
+    
+    //image(currentPixelRenderer.srcImageBuffer.pImage, 0, 0, width, height);
+    //image(currentPixelRenderer.dstImageBuffer.pImage, 0, 0, width, height);
+    
+    //image(sourceImage, 0, 0, width, height);
   } else{
-    fill(255,255,255); 
-    rect(0,0,width,height); 
+    stroke(255,255,255,0); 
+    fill(255,255,255,255); 
+    rect(0, 0, width, height); 
   }
   
   lastUpdateTimestamp = millis(); 
-  
-  //if(currentState == State.Ready){
-  //  if(!currentPixelRenderer.isAnimating()){
-  //    int level = currentPixelRenderer.currentLevel;
-  //    level += dir;
-      
-  //    if(dir > 0 && level >= currentPixelRenderer.size()){
-  //      dir = -dir; 
-  //      currentPixelRenderer.setLevel(currentPixelRenderer.currentLevel+dir);
-  //    } else if(dir < 0 && level < 0){
-  //      dir = -dir;
-  //      currentPixelRenderer.setLevel(currentPixelRenderer.currentLevel+dir);
-  //    } else{
-  //      currentPixelRenderer.setLevel(level);
-  //    }      
-  //  }
-  //}
 }
 
-/** updating sqaures/voxels, fading into the next colour - expected whole screen **/ 
-void drawTransitionToNewImage(long et){
-  if(previousPixelRenderer == null){
-    fill(255,255,255);
-    rect(0,0,width,height);  
-  } else{
-    previousPixelRenderer.fillWithMainColour(); 
-    rect(0,0,width,height);
+void keyPressed() {
+  ultrasonicSensor.onKeyDown(keyCode);  // for development  
+}
+
+void updateState(){
+  // state update
+  if(!fetchingImage){
+    if(!currentPixelRenderer.isAnimating()){
+      if(currentState == State.TransitionToNewImage){
+        setState(State.IdleOut);   
+      } else if(currentState == State.TransitioningIn){
+        if(currentPixelRenderer.currentLevel < currentPixelRenderer.size()-1){
+          currentPixelRenderer.setLevel(currentPixelRenderer.currentLevel+1);   
+        } else{
+          setState(State.IdleIn);   
+        }
+      } else if(currentState == State.TransitioningOut){
+        if(currentPixelRenderer.currentLevel > 0){
+          currentPixelRenderer.setLevel(currentPixelRenderer.currentLevel-1);   
+        } else{
+          setState(State.IdleOut); 
+        }
+      }
+    }
   }
-  
-  currentPixelRenderer.draw(et);
-  
-  if(!currentPixelRenderer.isAnimating()){
-    setState(State.Ready);
-  }  
-}
-
-void drawReady(long et){
-  currentPixelRenderer.draw(et);
 }
 
 boolean distanceUpdateCheck(){
@@ -163,23 +173,11 @@ boolean distanceUpdateCheck(){
     thread("updateUltrasonicSensor");
   }
   
-  if(fetchingImage || currentState != State.Ready){
-    return false; // ignore, only process when 'Ready'    
+  if(fetchingImage || currentState == State.TransitionToNewImage){
+    return false; //  
   }   
   
-  previousProximityRange = currentProximityRange; 
-  currentProximityRange = ultrasonicSensor.getCurrentRange(); 
-  
-  // update level based on current range 
-  if(currentProximityRange == ProximityRange.Far){
-    currentPixelRenderer.setLevel(0);
-  } else if(currentProximityRange == ProximityRange.MediumFar){
-    currentPixelRenderer.setLevel(1);
-  } else if(currentProximityRange == ProximityRange.Medium){
-    currentPixelRenderer.setLevel(2);
-  } else if(currentProximityRange == ProximityRange.Close){
-    currentPixelRenderer.setLevel(3);
-  } 
+  setProximityRange(ultrasonicSensor.getCurrentRange());     
   
   return true; 
 }
@@ -190,7 +188,7 @@ void updateUltrasonicSensor(){
 
 boolean imageUpdateCheck(){
   long et = millis() - lastImageTimestamp; 
-  if(et > IMAGE_UPDATE_FREQUENCY && currentProximityRange == ProximityRange.Far && currentState == State.Ready){
+  if(et >= IMAGE_UPDATE_FREQUENCY && currentProximityRange == ProximityRange.Far && (currentState == State.IdleOut || currentState == State.IdleIn)){
     requestNextImage();
     return true; 
   }
@@ -228,9 +226,9 @@ void fetchNextImage() {
   PALETTE_INDEX = getSwatchIndexFromPalette(obj);     
     
   ImageDetails imageDetails = new ImageDetails(obj, PALETTE_INDEX);
-  PixelRenderer pixelRenderer = new PixelRenderer(imageDetails);  
+  PixelRenderer pixelRenderer = new PixelRenderer(imageDetails, offscreenBuffer);  
   
-  pixelRenderer.createLevelFromMainColour(4,4, 1*1000); 
+  pixelRenderer.createLevelFromMainColour(4,4, 20); 
   
   String imageSrc = imageDetails.getImageSrc();  
   
@@ -243,57 +241,57 @@ void fetchNextImage() {
   
   float imageScale = 1.0f;   
   
-  if(nextImage.width > nextImage.height){
-    imageScale = sourceImage.width/nextImage.width;   
+  if(sourceImage.width > sourceImage.height){
+    imageScale = (float)sourceImage.width/(float)nextImage.width;   
   } else{
-    imageScale = sourceImage.height/nextImage.height;   
+    imageScale = (float)sourceImage.height/(float)nextImage.height;   
   }
   
   nextImage.resize((int)(nextImage.width * imageScale), (int)(nextImage.height * imageScale));
   
-  //pixelRenderer.createLevelFromImage(10,10, nextImage, 1000);
-  //pixelRenderer.createLevelFromImage(20,20, nextImage, 40);
-  //pixelRenderer.createLevelFromImage(30,30, nextImage, 30);
-  //pixelRenderer.createLevelFromImage(40,40, nextImage, 20);
-  //pixelRenderer.createLevelFromImage(50,50, nextImage, 10);
-  //pixelRenderer.createLevelFromImage(60,60, nextImage, 5);
-  //pixelRenderer.createLevelFromImage(70,70, nextImage, 2);
-  
-  // mediumfar 
-  pixelRenderer.createLevelFromImage(20,20, nextImage, 40); // 1
-  // medium 
-  pixelRenderer.createLevelFromImage(40,40, nextImage, 20); // 2
-  // close 
-  pixelRenderer.createLevelFromImage(80,80, nextImage, 2); // 3 
- 
-  println("Time taken to resize image " + markEndTime());
-  
-  int ox = (int)((float)(nextImage.width/(float)sourceImage.width)*0.5f);
-  int oy = (int)((float)(nextImage.height/(float)sourceImage.height)*0.5f);
+  int ox = (int)(((float)sourceImage.width - (float)nextImage.width)*0.5f);
+  int oy = (int)(((float)sourceImage.height - (float)nextImage.height)*0.5f);
   
   for(int y=0; y<sourceImage.height; y++){
     for(int x=0; x<sourceImage.width; x++){
-      int index = (y * sourceImage.width) + x; 
+      int sourceIndex = (y * sourceImage.width) + x;
+      int nextIndex = ((y - oy) * nextImage.width) + (x + ox); 
       
-      if(y >= oy && y < (sourceImage.height-oy*2) && x >= ox && x < (sourceImage.height-ox*2)){
-        int subX = x - ox; 
-        int subY = y - oy; 
-        int subIndex = (subY * nextImage.width) + subX;
-        sourceImage.pixels[index] = nextImage.pixels[subIndex]; 
-      } else{
-        sourceImage.pixels[index] = color(255, 255, 255);    
+      if(y < 0 || y >= sourceImage.height || x < 0 || x >= sourceImage.width){            
+        continue; 
       }
+      
+      if((x + ox) < 0 || (x + ox) >= nextImage.width || (y - oy) < 0 || (y - oy) >= nextImage.height){
+        sourceImage.pixels[sourceIndex] = color(255, 255, 255);
+        continue;   
+      }            
+      
+      sourceImage.pixels[sourceIndex] = nextImage.pixels[nextIndex];             
     }
   }
   sourceImage.updatePixels();
   
+  int[] levelResolutions = new int[]{
+    20, 40, 60, 80, 100   
+  };
+  
+  int[] levelTransitionTimesInMS = new int[]{
+    20, 10, 5, 5, 1          
+  };
+  
+  for(int i=0; i<levelResolutions.length; i++){
+    pixelRenderer.createLevelFromImage(levelResolutions[i],levelResolutions[i], nextImage, levelTransitionTimesInMS[i]);    
+  }
+ 
+  println("Time taken to resize image " + markEndTime());   
+  
   println("Time taken to update pixels " + markEndTime());
   
-  setCurrentPixelRenderer(pixelRenderer); 
+  setPixelRenderer(pixelRenderer); 
   
   setState(State.TransitionToNewImage);
    
-  fetchingImage = false;
+  fetchingImage = false;   
 }
 
 int getSwatchIndexFromPalette(JSONObject nextImageJson){
