@@ -5,11 +5,11 @@ boolean fetchingImage = false;
 
 PImage sourceImage = null; 
 
-long lastUpdateTimestamp = millis(); 
-long stateChangedTimestamp = millis();
-long lastImageTimestamp = millis();
+float lastUpdateTimestamp = millis(); 
+float stateChangedTimestamp = millis();
+float lastImageTimestamp = millis();
 
-long currentProximityDistance = 0;  
+float currentProximityDistance = 0;  
 
 PixelRenderer currentPixelRenderer; 
 PImageBuffer offscreenBuffer; 
@@ -20,9 +20,11 @@ State currentState = State.Undefined;
 ProximityRange previousProximityRange = ProximityRange.Far; 
 ProximityRange currentProximityRange = ProximityRange.Far; 
 
-long tmpTimestamp = 0;  
+float tmpTimestamp = 0;  
 
 UltrasonicSensor ultrasonicSensor; 
+
+int sourceImageAlpha = 0; 
 
 void setup() {    
   //fullScreen();
@@ -69,6 +71,10 @@ void setState(State state){
 
 void onStateChanged(){
   println("onStateChanged " + currentState); 
+  
+  if(currentState == State.TransitioningIn){
+    sourceImageAlpha = 0;   
+  }  
 }
 
 void setPixelRenderer(PixelRenderer pixelRenderer){
@@ -106,14 +112,14 @@ void markStartTime(){
   tmpTimestamp = millis();   
 }
 
-long markEndTime(){
-  long et = millis() - tmpTimestamp; 
+float markEndTime(){
+  float et = millis() - tmpTimestamp; 
   tmpTimestamp = millis(); 
   return et;    
 }
 
 void draw() {    
-  long et = millis() - lastUpdateTimestamp;
+  float et = millis() - lastUpdateTimestamp;
   lastUpdateTimestamp = millis(); 
   
   imageUpdateCheck(); 
@@ -123,19 +129,29 @@ void draw() {
   updateState(); 
   
   if(currentPixelRenderer != null){
-    currentPixelRenderer.update(et);
+    // TODO: fix hack 
+    if(currentState == State.IdleIn){
+      sourceImageAlpha += 10;
+      sourceImageAlpha = clamp(sourceImageAlpha, 0, 255);      
+    } else if(currentState == State.TransitioningOut && sourceImageAlpha > 0){
+      sourceImageAlpha -= 10; 
+      sourceImageAlpha = clamp(sourceImageAlpha, 0, 255);
+    } else{
+      currentPixelRenderer.update(et);  
+    }    
     
-    // draw 
-    image(currentPixelRenderer.getImage(), 0, 0, width, height);
+    // draw
+    tint(255, 255);
+    image(currentPixelRenderer.getImage(), 0, 0, width, height);       
     
-    //image(currentPixelRenderer.srcImageBuffer.pImage, 0, 0, width, height);
-    //image(currentPixelRenderer.dstImageBuffer.pImage, 0, 0, width, height);
+    if(sourceImageAlpha > 5){
+      tint(255, sourceImageAlpha); 
+      image(sourceImage, 0, 0, width, height);  
+    }
     
     //image(sourceImage, 0, 0, width, height);
   } else{
-    stroke(255,255,255,0); 
-    fill(255,255,255,255); 
-    rect(0, 0, width, height); 
+    background(255);  
   }
   
   lastUpdateTimestamp = millis(); 
@@ -146,6 +162,10 @@ void keyPressed() {
 }
 
 void updateState(){
+  if(currentPixelRenderer == null){
+    return;   
+  }
+  
   // state update
   if(!fetchingImage){
     if(!currentPixelRenderer.isAnimating()){
@@ -187,8 +207,9 @@ void updateUltrasonicSensor(){
 }
 
 boolean imageUpdateCheck(){
-  long et = millis() - lastImageTimestamp; 
-  if(et >= IMAGE_UPDATE_FREQUENCY && currentProximityRange == ProximityRange.Far && (currentState == State.IdleOut || currentState == State.IdleIn)){
+  float etSinceLastImage = millis() - lastImageTimestamp;
+  float etSinceStateChange = millis() - stateChangedTimestamp; 
+  if(currentState == State.IdleOut && etSinceLastImage >= IMAGE_UPDATE_FREQUENCY && etSinceStateChange > IMAGE_UPDATE_STATE_CHANGE_THRESHOLD){
     requestNextImage();
     return true; 
   }
@@ -228,7 +249,7 @@ void fetchNextImage() {
   ImageDetails imageDetails = new ImageDetails(obj, PALETTE_INDEX);
   PixelRenderer pixelRenderer = new PixelRenderer(imageDetails, offscreenBuffer);  
   
-  pixelRenderer.createLevelFromMainColour(4,4, 20); 
+  pixelRenderer.createGridGrowLevelFromMainColour(4, 4, 30, 3); 
   
   String imageSrc = imageDetails.getImageSrc();  
   
@@ -272,15 +293,19 @@ void fetchNextImage() {
   sourceImage.updatePixels();
   
   int[] levelResolutions = new int[]{
-    20, 40, 60, 80, 100   
+    5, 10, 30, 50, 80, 100   
   };
   
   int[] levelTransitionTimesInMS = new int[]{
-    20, 10, 5, 5, 1          
+    15, 10, 5, 5, 2, 1         
+  };
+  
+  int[] levelSeeds = new int[]{
+    20, 30, 40, 50, 60, 100          
   };
   
   for(int i=0; i<levelResolutions.length; i++){
-    pixelRenderer.createLevelFromImage(levelResolutions[i],levelResolutions[i], nextImage, levelTransitionTimesInMS[i]);    
+    pixelRenderer.createGridGrowLevelFromImage(levelResolutions[i],levelResolutions[i], sourceImage, levelTransitionTimesInMS[i], levelSeeds[i]);    
   }
  
   println("Time taken to resize image " + markEndTime());   

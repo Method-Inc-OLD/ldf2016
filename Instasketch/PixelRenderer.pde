@@ -1,5 +1,6 @@
 
 class PixelIndex{
+  int index = -1; 
   int row = 0; 
   int col = 0; 
   
@@ -7,7 +8,17 @@ class PixelIndex{
     
   }
   
+  PixelIndex(int index){
+    this.index = index;  
+  }
+  
   PixelIndex(int row, int col){
+    this.row = row; 
+    this.col = col; 
+  }
+  
+  PixelIndex(int index, int row, int col){
+    this.index = index; 
     this.row = row; 
     this.col = col; 
   }
@@ -19,7 +30,7 @@ class PixelIndex{
     if (!(other instanceof PixelIndex)) return false;
     PixelIndex otherPixelIndex = (PixelIndex)other;
     
-    return otherPixelIndex.row == row && otherPixelIndex.col == col; 
+    return (otherPixelIndex.row == row && otherPixelIndex.col == col) || (otherPixelIndex.index != -1 && index != -1 && otherPixelIndex.index == index); 
   }  
 }
 
@@ -30,7 +41,7 @@ class Pixel extends Rect{
   
   color targetColor; 
   
-  long age = 0; 
+  float age = 0; 
   
   float speed = 1; 
   
@@ -91,7 +102,7 @@ class PixelRenderer{
   
   boolean uniformPixels = false;
   
-  boolean randomlyOffsetPixels = true; 
+  boolean randomlyOffsetPixels = false; 
   
   float randomOffsetPerc = 0.01f;
      
@@ -108,11 +119,7 @@ class PixelRenderer{
     this.srcImageBuffer = new PImageBuffer(this.dstImageBuffer); 
   }  
   
-  void freeze(){
-      getCurrentPixelRenderer().frozen = true; 
-  }
-  
-  void update(long et){
+  void update(float et){
     if(levels.size() == 0){
       return;   
     }
@@ -136,11 +143,6 @@ class PixelRenderer{
       previousLevel = -1; 
   }
   
-  //void fillWithMainColour(){    
-  //  dstImageBuffer.fill(imageDetails.getRed(),imageDetails.getGreen(),imageDetails.getBlue());
-  //  dstImageBuffer.rect(0, 0, width, height);  
-  //}
-  
   BasePixelRendererLevel getCurrentPixelRenderer(){
     return levels.get(currentLevel); 
   }
@@ -152,10 +154,6 @@ class PixelRenderer{
     return levels.get(previousLevel); 
   }
   
-  void createLevelFromMainColour(float xres, float yres){
-    createLevelFromMainColour(xres, yres, defaultSpeed); 
-  }
-  
   float getWidth(){
     return dstImageBuffer.width; 
   }
@@ -164,20 +162,36 @@ class PixelRenderer{
     return dstImageBuffer.height; 
   }
   
-  void createLevelFromMainColour(float xres, float yres, float speed){
+  
+  
+  void createFadeInLevelFromMainColour(float xres, float yres, float speed){
     BasePixelRendererLevel level = createPixelRendererLevelFromType(PixelRendererLevelType.FadeTile);
     level.speed = speed; 
     
     int w = 1; 
     int h = 1; 
     
-    w = (int)(getWidth() / xres); 
-    h = (int)(getHeight() / yres);
+    w = (int)Math.ceil(getWidth() / xres); 
+    h = (int)Math.ceil(getHeight() / yres);
       
     if(uniformPixels){
       w = min(w,h); 
       h = min(w,h); 
-    }                
+    }           
+    
+    float cols = (float)getWidth()/(float)w;
+    float rows = (float)getHeight()/(float)h;
+    
+    float rw = getWidth() - (w * cols); 
+    float rh = getHeight() - (h * rows);
+    
+    if(rw > 0){
+      w += rw;   
+    }
+    
+    if(rh > 0){
+      h += rh;   
+    }
     
     float randomOX = w * randomOffsetPerc;
     float randomOY = h * randomOffsetPerc; 
@@ -213,12 +227,9 @@ class PixelRenderer{
     add(level); 
   }
   
-  void createLevelFromImage(float xres, float yres, PImage image){
-      createLevelFromImage(xres, yres, image, defaultSpeed);
-  }
-  
-  void createLevelFromImage(float xres, float yres, PImage image, float speed){    
-    BasePixelRendererLevel level = createPixelRendererLevelFromType(PixelRendererLevelType.Grow); 
+  void createGridGrowLevelFromMainColour(float xres, float yres, float speed, int numberOfSeeds){
+    BasePixelRendererLevel level = createPixelRendererLevelFromType(PixelRendererLevelType.Grow);
+    ((GrowPixelRendererLevel)level).maxSeeds = numberOfSeeds;
     level.speed = speed; 
     
     int w = (int)(getWidth() / xres); 
@@ -238,11 +249,78 @@ class PixelRenderer{
     int col = 0; 
     
     for(int y=0; y<getHeight(); y+=h){           
-      for(int x=0; x<getWidth(); x+=w){                
-        // PImage image, int x, int y, int w, int h
-        color pixelColour = getAverageColourFromImagePatch(image, x, y, w, h); 
+      for(int x=0; x<getWidth(); x+=w){                 
         
-        Pixel pix = new Pixel(x, y, w, h, pixelColour);        
+        Pixel pix = new Pixel(x, y, w, h, imageDetails.myColour);        
+        pix.col = col;
+        pix.row = row;
+        
+        pix.speed = (level.speed + random(-randomSpeed, randomSpeed));
+          
+        level.add(pix);  
+        
+        if(randomlyOffsetPixels && random(0, 100) > 80){
+          float ox = random(-randomOX, randomOX);
+          float oy = random(-randomOY, randomOY);
+          pix.x += ox; 
+          pix.y += oy;
+        }
+        
+        col += 1; 
+      }
+      row += 1; 
+      col = 0; 
+    } 
+    
+    add(level); 
+  }
+  
+  void createGridGrowLevelFromImage(float xres, float yres, PImage image, float speed, int numberOfSeeds){    
+    BasePixelRendererLevel level = createPixelRendererLevelFromType(PixelRendererLevelType.Grow);
+    ((GrowPixelRendererLevel)level).maxSeeds = numberOfSeeds;
+    level.speed = speed; 
+    
+    int w = (int)(getWidth() / xres); 
+    int h = (int)(getHeight() / yres); 
+    
+    if(uniformPixels){
+      w = min(w,h); 
+      h = min(w,h); 
+    } 
+    
+    float randomOX = w * 0.05f;
+    float randomOY = h * 0.05f; 
+    
+    float randomSpeed = speed * 0.4f; 
+    
+    int row = 0; 
+    int col = 0; 
+    
+    for(int y=0; y<getHeight(); y+=h){           
+      for(int x=0; x<getWidth(); x+=w){ 
+        // extand if only a few pixels aay from the edge 
+        int cw = w; 
+        int ch = h; 
+        
+        // PImage image, int x, int y, int w, int h
+        if((x + cw) > getWidth()){
+          cw = (int)((x + cw) - getWidth());  
+        } else if(Math.abs((x + cw) - getWidth()) < 5){
+          cw += Math.abs((x + cw) - getWidth());   
+        }
+        
+        if((y + ch) > getHeight()){
+          ch = (int)((y + ch) - getHeight());  
+        } else if(Math.abs((ch + h) - getHeight()) < 5){
+          ch += Math.abs((ch + h) - getHeight());   
+        }
+        
+        if( cw <= 0 || ch <= 0)
+          continue; 
+        
+        color pixelColour = getAverageColourFromImagePatch(image, x, y, cw, ch); 
+        
+        Pixel pix = new Pixel(x, y, cw, ch, pixelColour);        
         pix.col = col;
         pix.row = row;
         
@@ -280,10 +358,6 @@ class PixelRenderer{
     
     previousLevel = currentLevel; 
     currentLevel = level;
-    
-    if(previousLevel >= 0 && previousLevel<size()){
-      levels.get(previousLevel).frozen = true;   
-    }
     
     this.srcImageBuffer.copyPixels(dstImageBuffer);
     this.srcImageBuffer.updatePixels(); 

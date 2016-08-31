@@ -38,7 +38,7 @@ class BasePixelRendererLevel{
     return pixelArray.size();     
   }
   
-  void update(long et, PImageBuffer srcImage, PImageBuffer dstImage){
+  void update(float et, PImageBuffer srcImage, PImageBuffer dstImage){
     // override  
   }
   
@@ -114,7 +114,9 @@ class FadeTilePixelRendererLevel extends BasePixelRendererLevel{
 
 class GrowPixelRendererLevel extends BasePixelRendererLevel{
   
-  int maxSeeds = 20; 
+  int maxSeeds = 50;
+  
+  boolean constrainSeedsFromColourPatches = false; 
   
   ArrayList<PixelIndex> seeds = new ArrayList<PixelIndex>();
   ArrayList<PixelIndex> gorwn = new ArrayList<PixelIndex>();
@@ -126,28 +128,24 @@ class GrowPixelRendererLevel extends BasePixelRendererLevel{
   
   void add(Pixel pix){
     super.add(pix); 
-    
-    //if(!pix.isGrey() && growing.size() < maxSeeds){
-    //  growing.add(new PixelIndex(pix.row, pix.col)); 
-    //}
   }
   
-  void update(long et, PImageBuffer srcImage, PImageBuffer dstImage){    
-    //for(int i=0; i<gorwn.size(); i++){
-    //  PixelIndex index = gorwn.get(i);        
-    //  pixelArray.get(getArrayIndex(index)).draw(); 
-    //}
-    
+  void update(float et, PImageBuffer srcImage, PImageBuffer dstImage){      
     for(int i=0; i<growing.size(); i++){
       PixelIndex pixIndex = growing.get(i);
       int index = getArrayIndex(pixIndex);       
       
       if(!frozen){
         pixelArray.get(index).age += et; 
-        float t = (float)(pixelArray.get(index).age) / (float)(pixelArray.get(index).speed);
+        float t = 0.0f; 
+        if(isApproximately(pixelArray.get(index).speed, 0.0f)){
+          t = 1.0f;   
+        } else{
+          t = (float)(pixelArray.get(index).age) / (float)(pixelArray.get(index).speed);  
+        }        
         t = max(min(1.0f, t), 0.0f);
           
-        if(t == 1.0f){
+        if(isApproximately(t,1.0f)){
           pixelArray.get(index).update(srcImage, dstImage, 1.0f);
           gorwn.add(pixIndex); 
           growing.remove(i); 
@@ -158,6 +156,22 @@ class GrowPixelRendererLevel extends BasePixelRendererLevel{
         }   
       }
     }    
+    
+    if(growing.size() == 0 && growing.size() != size()){
+      addMoreSeeds();   
+    }
+  }
+  
+  void addMoreSeeds(){
+    for(int r=0; r<rows; r++){
+      for(int c=0; c<cols; c++){
+        int index = (r * cols) + c;
+        PixelIndex pi = new PixelIndex(index, r,c);
+        if(!gorwn.contains(pi)){
+          growing.add(pi); 
+        }
+      }
+    }
   }
   
   int getArrayIndex(PixelIndex index){
@@ -214,7 +228,7 @@ class GrowPixelRendererLevel extends BasePixelRendererLevel{
   
   void reset(){
     super.reset();
-    
+        
     gorwn.clear();  
     growing.clear();
     
@@ -229,15 +243,16 @@ class GrowPixelRendererLevel extends BasePixelRendererLevel{
   }
   
   void setInitialSeeds(){
+    seeds.clear();
+    
     for(int r=0; r<rows; r++){
       for(int c=0; c<cols; c++){
         int index = (r * cols) + c; 
         pixelArray.get(index).reset();
         
-        if(!pixelArray.get(index).isGrey()){
-          seeds.add(new PixelIndex(r,c)); 
-          //growing.add(new PixelIndex(r,c));
-        }
+        if(!constrainSeedsFromColourPatches || !pixelArray.get(index).isGrey()){
+          seeds.add(new PixelIndex(index, r,c));  
+        }        
       }
     } 
     

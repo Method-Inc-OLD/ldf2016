@@ -14,6 +14,12 @@ color getAverageColourFromImagePatch(PImage image, int x, int y, int w, int h){
     
   for(int i=y; i<y+h; i++){
     for(int j=x; j<x+w; j++){
+      if(j >= image.width)
+        continue;   
+        
+      if(i >= image.height)
+        continue;
+        
       int index = (i*image.width) + j; 
       color c = image.pixels[index]; 
       totalR += red(c);
@@ -50,5 +56,17 @@ color lerpColour(color c1, color c2, float t){
 }
 
 boolean isApproximately(float val, float target){
-  return Math.abs(val - target) < 0.01f;   
+  return Math.abs(val - target) < 0.05f;   
+}
+
+int clamp(int val, int min, int max){
+  return Math.min(Math.max(val, min), max);   
+}
+
+long clamp(long val, long min, long max){
+  return Math.min(Math.max(val, min), max);   
+}
+
+float clamp(float val, float min, float max){
+  return Math.min(Math.max(val, min), max);   
 }
