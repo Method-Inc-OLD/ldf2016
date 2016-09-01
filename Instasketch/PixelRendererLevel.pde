@@ -15,9 +15,7 @@ class BasePixelRendererLevel{
   float speed = 1.0f;
   
   int rows = 0; 
-  int cols = 0; 
-  
-  boolean frozen = false; 
+  int cols = 0;   
   
   BasePixelRendererLevel(){
     
@@ -43,7 +41,7 @@ class BasePixelRendererLevel{
   }
   
   void reset(){
-    frozen = false; 
+    
   }
   
   void clear(){
@@ -66,24 +64,23 @@ class FadeTilePixelRendererLevel extends BasePixelRendererLevel{
   void update(long et, PImageBuffer srcImage, PImageBuffer dstImage){
     int index = 0; 
     for(int r=0; r<rows; r++){
+      int yIndex = r * cols; 
       for(int c=0; c<cols; c++){
-        index = (r * cols) + c; 
+        index = yIndex + c; 
         
-        if(!frozen){
-          if(index == currentPixelIndex){
-            pixelArray.get(index).age += et;            
-            float t = (float)pixelArray.get(index).age/(float)(pixelArray.get(index).speed);
-            t = max(min(1.0f, t), 0.0f);
+        if(index == currentPixelIndex){
+          pixelArray.get(index).age += et;            
+          float t = (float)pixelArray.get(index).age/(float)(pixelArray.get(index).speed);
+          t = max(min(1.0f, t), 0.0f);
             
-            //println("t " + t + ", age " + pixelArray.get(index).age + ", index " + index);  
+          //println("t " + t + ", age " + pixelArray.get(index).age + ", index " + index);  
             
-            if(isApproximately(t,1.0f)){
-              pixelArray.get(index).update(srcImage, dstImage, 1.0f);  
-              currentPixelIndex += 1; 
-            } else{
-              pixelArray.get(index).update(srcImage, dstImage, t);
-            } 
-          }
+          if(isApproximately(t,1.0f)){
+            pixelArray.get(index).update(srcImage, dstImage, 1.0f);  
+            currentPixelIndex += 1; 
+          } else{
+            pixelArray.get(index).update(srcImage, dstImage, t);
+          } 
         }
       }
     }    
@@ -95,8 +92,9 @@ class FadeTilePixelRendererLevel extends BasePixelRendererLevel{
     currentPixelIndex = 0; 
     
     for(int r=0; r<rows; r++){
+      int yIndex = r * cols; 
       for(int c=0; c<cols; c++){
-        int index = (r * cols) + c; 
+        int index = yIndex + c; 
         pixelArray.get(index).reset();   
       }
     }    
@@ -135,26 +133,24 @@ class GrowPixelRendererLevel extends BasePixelRendererLevel{
       PixelIndex pixIndex = growing.get(i);
       int index = getArrayIndex(pixIndex);       
       
-      if(!frozen){
-        pixelArray.get(index).age += et; 
-        float t = 0.0f; 
-        if(isApproximately(pixelArray.get(index).speed, 0.0f)){
-          t = 1.0f;   
-        } else{
-          t = (float)(pixelArray.get(index).age) / (float)(pixelArray.get(index).speed);  
-        }        
+      pixelArray.get(index).age += et; 
+      float t = 0.0f; 
+      if(isApproximately(pixelArray.get(index).speed, 0.0f)){
+        t = 1.0f;   
+      } else{
+        t = (float)(pixelArray.get(index).age) / (float)(pixelArray.get(index).speed);  
+      }        
         t = max(min(1.0f, t), 0.0f);
           
-        if(isApproximately(t,1.0f)){
-          pixelArray.get(index).update(srcImage, dstImage, 1.0f);
-          gorwn.add(pixIndex); 
-          growing.remove(i); 
+      if(isApproximately(t,1.0f)){
+        pixelArray.get(index).update(srcImage, dstImage, 1.0f);
+        gorwn.add(pixIndex); 
+        growing.remove(i); 
           
-          addNeighboursForPixelAtIndex(pixIndex);
-        } else{
-          pixelArray.get(index).update(srcImage, dstImage, t);
-        }   
-      }
+        addNeighboursForPixelAtIndex(pixIndex);
+      } else{
+        pixelArray.get(index).update(srcImage, dstImage, t);
+      }   
     }    
     
     if(growing.size() == 0 && growing.size() != size()){
@@ -233,8 +229,9 @@ class GrowPixelRendererLevel extends BasePixelRendererLevel{
     growing.clear();
     
     for(int r=0; r<rows; r++){
+      int yIndex = r * cols; 
       for(int c=0; c<cols; c++){
-        int index = (r * cols) + c; 
+        int index = yIndex + c; 
         pixelArray.get(index).reset();   
       }
     }
@@ -246,8 +243,9 @@ class GrowPixelRendererLevel extends BasePixelRendererLevel{
     seeds.clear();
     
     for(int r=0; r<rows; r++){
+      int yIndex = r * cols; 
       for(int c=0; c<cols; c++){
-        int index = (r * cols) + c; 
+        int index = yIndex + c; 
         pixelArray.get(index).reset();
         
         if(!constrainSeedsFromColourPatches || !pixelArray.get(index).isGrey()){

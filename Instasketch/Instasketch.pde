@@ -24,11 +24,18 @@ float tmpTimestamp = 0;
 
 UltrasonicSensor ultrasonicSensor; 
 
+float elapsedUpdateTime = 0.0f; 
+int fps = 0; 
+int frameCount = 0; 
+
 int sourceImageAlpha = 0; 
 
-void setup() {    
-  //fullScreen();
-  size(800, 600);  
+void setup() {   
+    
+  frameRate(FRAME_RATE);
+
+  fullScreen(P2D);
+  //size(800, 600);  
   
   surface.setResizable(false);
   
@@ -131,18 +138,20 @@ void draw() {
   if(currentPixelRenderer != null){
     // TODO: fix hack 
     if(currentState == State.IdleIn){
-      sourceImageAlpha += 10;
+      sourceImageAlpha += IMAGE_FADE_INCREMENT;
       sourceImageAlpha = clamp(sourceImageAlpha, 0, 255);      
     } else if(currentState == State.TransitioningOut && sourceImageAlpha > 0){
-      sourceImageAlpha -= 10; 
+      sourceImageAlpha -= IMAGE_FADE_INCREMENT; 
       sourceImageAlpha = clamp(sourceImageAlpha, 0, 255);
     } else{
       currentPixelRenderer.update(et);  
     }    
     
     // draw
-    tint(255, 255);
-    image(currentPixelRenderer.getImage(), 0, 0, width, height);       
+    if(sourceImageAlpha < 125){
+      tint(255, 255);
+      image(currentPixelRenderer.getImage(), 0, 0, width, height);
+    }
     
     if(sourceImageAlpha > 5){
       tint(255, sourceImageAlpha); 
@@ -152,6 +161,11 @@ void draw() {
     //image(sourceImage, 0, 0, width, height);
   } else{
     background(255);  
+  }
+  
+  if(SHOW_FRAME_RATE){
+    fill(255, 255, 255);
+    text(frameRate, 20, 20); 
   }
   
   lastUpdateTimestamp = millis(); 
@@ -247,9 +261,7 @@ void fetchNextImage() {
   PALETTE_INDEX = getSwatchIndexFromPalette(obj);     
     
   ImageDetails imageDetails = new ImageDetails(obj, PALETTE_INDEX);
-  PixelRenderer pixelRenderer = new PixelRenderer(imageDetails, offscreenBuffer);  
-  
-  pixelRenderer.createGridGrowLevelFromMainColour(4, 4, 30, 3); 
+  PixelRenderer pixelRenderer = new PixelRenderer(imageDetails, offscreenBuffer);     
   
   String imageSrc = imageDetails.getImageSrc();  
   
@@ -292,16 +304,18 @@ void fetchNextImage() {
   }
   sourceImage.updatePixels();
   
+  pixelRenderer.createGridGrowLevelFromMainColour(4, 4, 30, 3);
+  
   int[] levelResolutions = new int[]{
-    5, 10, 30, 50, 80, 100   
+    4, 5, 10, 30  
   };
   
   int[] levelTransitionTimesInMS = new int[]{
-    15, 10, 5, 5, 2, 1         
+    15, 15, 10, 5         
   };
   
   int[] levelSeeds = new int[]{
-    20, 30, 40, 50, 60, 100          
+    10, 20, 30, 40         
   };
   
   for(int i=0; i<levelResolutions.length; i++){

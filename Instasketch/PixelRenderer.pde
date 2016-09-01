@@ -38,8 +38,8 @@ class Pixel extends Rect{
   
   int row = -1; 
   int col = -1; 
-  
-  color targetColor; 
+
+  color targetColor;   
   
   float age = 0; 
   
@@ -56,16 +56,17 @@ class Pixel extends Rect{
     int imageH = srcImage.height;  
     
     for(int cy=this.y; cy<this.y+this.h; cy++){
+      int yIndex = cy * imageW; 
       for(int cx=this.x; cx<this.x+this.w; cx++){
         if(cx < 0 || cx >= imageW || cy < 0 || cy>= imageH){
           continue;   
         }
         
-        int index = (cy * imageW) + cx; 
+        int index = yIndex + cx; 
         color c1 = srcImage.getPixel(index); 
         color c2 = targetColor; 
         color c = lerpColour(c1, c2, t);
-        //c = color(255, 255, 255); 
+        
         dstImage.setPixel(index, c); 
       }
     }
@@ -101,8 +102,6 @@ class PixelRenderer{
   PImageBuffer dstImageBuffer;
   
   boolean uniformPixels = false;
-  
-  boolean randomlyOffsetPixels = false; 
   
   float randomOffsetPerc = 0.01f;
      
@@ -193,9 +192,6 @@ class PixelRenderer{
       h += rh;   
     }
     
-    float randomOX = w * randomOffsetPerc;
-    float randomOY = h * randomOffsetPerc; 
-    
     int row = 0; 
     int col = 0; 
     
@@ -208,14 +204,7 @@ class PixelRenderer{
         
         pix.speed = level.speed; 
           
-        level.add(pix);          
-        
-        if(randomlyOffsetPixels && random(0, 100) > 80){
-          float ox = random(-randomOX, randomOX);
-          float oy = random(-randomOY, randomOY);
-          //pix.x += ox; 
-          //pix.y += oy;                             
-        }     
+        level.add(pix);            
         
         col += 1;
       }
@@ -240,31 +229,22 @@ class PixelRenderer{
       h = min(w,h); 
     } 
     
-    float randomOX = w * 0.05f;
-    float randomOY = h * 0.05f; 
-    
     float randomSpeed = speed * 0.2f; 
     
     int row = 0; 
     int col = 0; 
     
-    for(int y=0; y<getHeight(); y+=h){           
+    for(int y=0; y<getHeight(); y+=h){
+      int yIndex = (int)(y*getWidth()); 
       for(int x=0; x<getWidth(); x+=w){                 
-        
+        int index = yIndex + x;   
         Pixel pix = new Pixel(x, y, w, h, imageDetails.myColour);        
         pix.col = col;
         pix.row = row;
         
-        pix.speed = (level.speed + random(-randomSpeed, randomSpeed));
+        pix.speed = (level.speed + randomSpeed);
           
         level.add(pix);  
-        
-        if(randomlyOffsetPixels && random(0, 100) > 80){
-          float ox = random(-randomOX, randomOX);
-          float oy = random(-randomOY, randomOY);
-          pix.x += ox; 
-          pix.y += oy;
-        }
         
         col += 1; 
       }
@@ -286,17 +266,15 @@ class PixelRenderer{
     if(uniformPixels){
       w = min(w,h); 
       h = min(w,h); 
-    } 
-    
-    float randomOX = w * 0.05f;
-    float randomOY = h * 0.05f; 
+    }     
     
     float randomSpeed = speed * 0.4f; 
     
     int row = 0; 
     int col = 0; 
     
-    for(int y=0; y<getHeight(); y+=h){           
+    for(int y=0; y<getHeight(); y+=h){
+      
       for(int x=0; x<getWidth(); x+=w){ 
         // extand if only a few pixels aay from the edge 
         int cw = w; 
@@ -327,13 +305,6 @@ class PixelRenderer{
         pix.speed = (level.speed + random(-randomSpeed, randomSpeed));
           
         level.add(pix);  
-        
-        if(randomlyOffsetPixels && random(0, 100) > 80){
-          float ox = random(-randomOX, randomOX);
-          float oy = random(-randomOY, randomOY);
-          pix.x += ox; 
-          pix.y += oy;
-        }
         
         col += 1; 
       }
