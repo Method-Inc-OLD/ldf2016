@@ -26,48 +26,12 @@ void fetchNextImage() {
     
   ImageDetails imageDetails = new ImageDetails(responseJSON.getJSONObject("next_image"), myPaletteIndex);         
   
-  // call the colourise service 
-  String colouriseUrl = URL_COLOURISED_IMAGE + "?image_url=" + imageDetails.getImageSrc() + "&colours=6" + "&swatch_index=" + myPaletteIndex;
-  println("posting: " + colouriseUrl); 
-  
-  PImage nextImage = loadImage(colouriseUrl, "jpg");
-  
-  // resize image to fill fit the screen 
-  float imageScale = 1.0f;   
-  
-  if(sourceImage.width > sourceImage.height){
-    imageScale = (float)sourceImage.width/(float)nextImage.width;   
-  } else{
-    imageScale = (float)sourceImage.height/(float)nextImage.height;   
-  }
-  
-  nextImage.resize((int)(nextImage.width * imageScale), (int)(nextImage.height * imageScale));
-  
-  int ox = (int)(((float)sourceImage.width - (float)nextImage.width)*0.5f);
-  int oy = (int)(((float)sourceImage.height - (float)nextImage.height)*0.5f);
-  
-  for(int y=0; y<sourceImage.height; y++){
-    for(int x=0; x<sourceImage.width; x++){
-      int sourceIndex = (y * sourceImage.width) + x;
-      int nextIndex = ((y - oy) * nextImage.width) + (x + ox); 
-      
-      if(y < 0 || y >= sourceImage.height || x < 0 || x >= sourceImage.width){            
-        continue; 
-      }
-      
-      if((x + ox) < 0 || (x + ox) >= nextImage.width || (y - oy) < 0 || (y - oy) >= nextImage.height){
-        sourceImage.pixels[sourceIndex] = color(255, 255, 255);
-        continue;   
-      }            
-      
-      sourceImage.pixels[sourceIndex] = nextImage.pixels[nextIndex];             
-    }
-  }
-  sourceImage.updatePixels();
+  fetchAndSetImage(imageDetails);
+  fetchAndSetColoursiedImage(imageDetails); 
   
   // now resize to be used as the source for the new pixels 
-  int xRes = 80;
-  int yRes = 60;
+  int xRes = 40; // 60; // 80;
+  int yRes = 20; // 40; // 60;
   
   println("xRes " + xRes); 
   
@@ -75,12 +39,96 @@ void fetchNextImage() {
   sampleImage.resize(xRes, yRes);
   
   if(pixCollection == null){
-    pixCollection = createPixCollection(xRes, yRes, (int)width, (int)height, 5, sampleImage, imageDetails.myColour);   
+    pixCollection = createPixCollection(xRes, yRes, (int)width, (int)height, LEVELS_OF_DETAIL, sampleImage, imageDetails.myColour);   
   }
+  
+  animationController.init(sourceImage, orgSourceImage, pixCollection);    
   
   println("create pixCollection"); 
    
   isFetchingImage = false;   
+}
+
+void fetchAndSetImage(ImageDetails imageDetails){  
+  // call the colourise service imageDetails){
+  String imageUrl = imageDetails.getImageSrc();
+  println("posting: " + imageUrl); 
+  
+  PImage image = loadImage(imageUrl, "jpg");
+  
+  // resize image to fill fit the screen 
+  float imageScale = 1.0f;   
+  
+  if(orgSourceImage.width > orgSourceImage.height){
+    imageScale = (float)orgSourceImage.width/(float)image.width;   
+  } else{
+    imageScale = (float)orgSourceImage.height/(float)image.height;   
+  }
+  
+  image.resize((int)(image.width * imageScale), (int)(image.height * imageScale));
+  
+  int ox = (int)(((float)orgSourceImage.width - (float)image.width)*0.5f);
+  int oy = (int)(((float)orgSourceImage.height - (float)image.height)*0.5f);
+  
+  for(int y=0; y<orgSourceImage.height; y++){
+    for(int x=0; x<orgSourceImage.width; x++){
+      int sourceIndex = (y * orgSourceImage.width) + x;
+      int nextIndex = ((y - oy) * image.width) + (x + ox); 
+      
+      if(y < 0 || y >= orgSourceImage.height || x < 0 || x >= orgSourceImage.width){            
+        continue; 
+      }
+      
+      if((x + ox) < 0 || (x + ox) >= image.width || (y - oy) < 0 || (y - oy) >= image.height){
+        orgSourceImage.pixels[sourceIndex] = color(255, 255, 255);
+        continue;   
+      }            
+      
+      orgSourceImage.pixels[sourceIndex] = image.pixels[nextIndex];             
+    }
+  }
+  orgSourceImage.updatePixels();  
+}
+
+void fetchAndSetColoursiedImage(ImageDetails imageDetails){
+  // call the colourise service 
+  String colouriseUrl = URL_COLOURISED_IMAGE + "?image_url=" + imageDetails.getImageSrc() + "&colours=6" + "&swatch_index=" + myPaletteIndex;
+  println("posting: " + colouriseUrl); 
+  
+  PImage colourisedImage = loadImage(colouriseUrl, "jpg");
+  
+  // resize image to fill fit the screen 
+  float imageScale = 1.0f;   
+  
+  if(sourceImage.width > sourceImage.height){
+    imageScale = (float)sourceImage.width/(float)colourisedImage.width;   
+  } else{
+    imageScale = (float)sourceImage.height/(float)colourisedImage.height;   
+  }
+  
+  colourisedImage.resize((int)(colourisedImage.width * imageScale), (int)(colourisedImage.height * imageScale));
+  
+  int ox = (int)(((float)sourceImage.width - (float)colourisedImage.width)*0.5f);
+  int oy = (int)(((float)sourceImage.height - (float)colourisedImage.height)*0.5f);
+  
+  for(int y=0; y<sourceImage.height; y++){
+    for(int x=0; x<sourceImage.width; x++){
+      int sourceIndex = (y * sourceImage.width) + x;
+      int nextIndex = ((y - oy) * colourisedImage.width) + (x + ox); 
+      
+      if(y < 0 || y >= sourceImage.height || x < 0 || x >= sourceImage.width){            
+        continue; 
+      }
+      
+      if((x + ox) < 0 || (x + ox) >= colourisedImage.width || (y - oy) < 0 || (y - oy) >= colourisedImage.height){
+        sourceImage.pixels[sourceIndex] = color(255, 255, 255);
+        continue;   
+      }            
+      
+      sourceImage.pixels[sourceIndex] = colourisedImage.pixels[nextIndex];             
+    }
+  }
+  sourceImage.updatePixels();  
 }
 
 int getSwatchIndexFromPalette(JSONObject nextImageJson){

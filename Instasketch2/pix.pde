@@ -1,6 +1,8 @@
 
 class Pix{
   
+  public final float DEFAULT_ANIM_TIME = 4000.0f; 
+  
   public int x; 
   public int y; 
   public int w; 
@@ -11,7 +13,8 @@ class Pix{
   public color dstColour = color(255, 255, 255); 
   
   public float elapsedTime = 0.0f;
-  public float animTime = 2000.0f;
+  
+  public float[] animTimes; 
   
   private int currentLevel = 0; 
   
@@ -21,7 +24,11 @@ class Pix{
     this.w = w; 
     this.h = h; 
     
-    this.colours = new color[levels];   
+    this.colours = new color[levels];
+    this.animTimes = new float[levels]; 
+    for(int i=0; i<levels; i++){
+      this.animTimes[i] = DEFAULT_ANIM_TIME; 
+    }
   }
   
   public void draw(PGraphics graphics, float et){
@@ -57,16 +64,30 @@ class Pix{
     if(elapsedTime <= 0.0f){
       return 0.0f;   
     }
-    float t = elapsedTime / animTime; 
+    float t = elapsedTime / animTimes[currentLevel]; 
     t = min(1.0f, max(t, 0.0f)); 
     return t; 
+  }
+  
+  public void setAnimTime(float animTime){
+    for(int i=0; i<animTimes.length; i++){
+      animTimes[i] = animTime;    
+    }
+  }
+  
+  public void setAnimTime(float animTime, int level){
+    if(level < 0 || level >= animTimes.length){
+      return;   
+    }
+    
+    animTimes[level] = animTime;
   }
   
   public color getCurrentColour(){
       return lerpColor(srcColour, dstColour, getCurrentAnimTime()); 
   }
   
-  public void setColours(color[] newColours){
+  public void setColours(color[] newColours){    
     for(int i=0; i<colours.length; i++){
       if(newColours.length <= i)
         break; 
@@ -76,6 +97,8 @@ class Pix{
   }
   
   public void setColour(color newColour, int level){
+    if(x == 0 && y == 0)
+      println("setColour at level " + level); 
     if(level < 0 || level >= colours.length)
       return; 
       
@@ -83,7 +106,7 @@ class Pix{
   }
   
   public boolean isAnimating(){
-    return elapsedTime < animTime;    
+    return elapsedTime < animTimes[currentLevel];    
   }
   
   public int getX(){

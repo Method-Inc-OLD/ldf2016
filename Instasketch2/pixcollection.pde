@@ -64,7 +64,8 @@ public PixCollection createPixCollection(int xRes, int yRes, int w, int h, int l
       pix.setColour(imageMainColour, 0); 
       pixCollection.pixies[y][x] = pix;
       setPixelColours(pix, levels, image); 
-      pix.setLevel(0, color(255, 255, 255)); 
+      pix.setLevel(0, color(255, 255, 255));
+      pix.setAnimTime(4000.0f, 0); 
     }
   }
     
@@ -72,8 +73,8 @@ public PixCollection createPixCollection(int xRes, int yRes, int w, int h, int l
 }
 
 public void setPixelColours(Pix pix, int levels, PImage image){
-  for(int i=0; i<levels; i++){
-    pix.setColour(getColourFromImage(pix.x, pix.y, i, image), levels-(i+1));     
+  for(int i=0; i<levels-1; i++){
+    pix.setColour(getColourFromImage(pix.x, pix.y, i*4, image), levels-(i+1));     
   }    
 }
 
@@ -91,10 +92,16 @@ public color getColourFromImage(int x, int y, int level, PImage image){
        
        int index = (cy * image.width) + cx; 
        color c = image.pixels[index]; 
-       tR += red(c); 
-       tG += green(c); 
-       tB += blue(c); 
-       pixelCount += 1; 
+       
+       boolean isGrey = red(c) == green(c) && green(c) == blue(c); 
+       
+       int weight = isGrey ? 1 : 10; 
+       for(int i=0; i<weight; i++){
+         tR += red(c); 
+         tG += green(c); 
+         tB += blue(c); 
+         pixelCount += 1;  
+       }       
     }
   }
   
