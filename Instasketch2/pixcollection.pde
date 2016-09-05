@@ -30,7 +30,17 @@ class PixCollection{
   }  
   
   public boolean isAnimating(){
-    return animating;   
+    //return animating;
+        
+    for(int y=0; y<sourceYRes; y++){
+      for(int x=0; x<sourceXRes; x++){
+        if(pixies[y][x].isAnimating()){
+          return true; 
+        }
+      }
+    }
+    
+    return false; 
   }
   
   public void setLevel(int level){
@@ -65,7 +75,27 @@ public PixCollection createPixCollection(int xRes, int yRes, int w, int h, int l
       pixCollection.pixies[y][x] = pix;
       setPixelColours(pix, levels, image); 
       pix.setLevel(0, color(255, 255, 255));
-      pix.setAnimTime(4000.0f, 0); 
+      pix.setAnimTime(2000.0f, 0); 
+    }
+  }
+    
+  return pixCollection; 
+}
+
+public PixCollection initPixCollection(PixCollection pixCollection, PImage image, color imageMainColour){  
+  if(image.pixels == null)
+    image.loadPixels(); 
+        
+  for(int y=0; y<pixCollection.sourceYRes; y++){
+    for(int x=0; x<pixCollection.sourceXRes; x++){
+      Pix pix = pixCollection.pixies[y][x];
+      
+      color currentColour = pix.getCurrentColour(); 
+            
+      pix.setColour(imageMainColour, 0); 
+      pixCollection.pixies[y][x] = pix;
+      setPixelColours(pix, pixCollection.levels, image);
+      pix.setLevel(pixCollection.currentLevel, currentColour);
     }
   }
     

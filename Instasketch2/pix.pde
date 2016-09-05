@@ -1,7 +1,7 @@
 
 class Pix{
   
-  public final float DEFAULT_ANIM_TIME = 4000.0f; 
+  public final float DEFAULT_ANIM_TIME = 100.0f; 
   
   public int x; 
   public int y; 
@@ -64,8 +64,11 @@ class Pix{
     if(elapsedTime <= 0.0f){
       return 0.0f;   
     }
-    float t = elapsedTime / animTimes[currentLevel]; 
+    float t = elapsedTime / animTimes[currentLevel];            
     t = min(1.0f, max(t, 0.0f)); 
+    
+    elapsedTime = max(0.0f, min(elapsedTime, animTimes[currentLevel])); 
+    
     return t; 
   }
   

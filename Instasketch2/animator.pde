@@ -13,20 +13,23 @@ public class AnimationController{
   public Animator[] animators; 
   public int currentAnimatorIndex = 0; 
   
-  public AnimationState state = AnimationState.Idle; 
+  public AnimationState state = AnimationState.Idle;     
       
   public AnimationController(int width, int height){
     this.width = width; 
-    this.height = height;     
+    this.height = height;           
   }
   
   public void init(PImage image, PImage fullColourImage, PixCollection pixCollection){
     if(animators == null){
       animators = new Animator[3];   
     }
+    
     animators[0] = new PixCollectionAnimator(pixCollection); 
     animators[1] = new ImageAnimator(image, this.width, this.height); 
-    animators[2] = new ImageAnimator(fullColourImage, this.width, this.height);     
+    animators[2] = new ImageAnimator(fullColourImage, this.width, this.height);
+    
+    setState(AnimationState.TransitionOut); 
   }
   
   public void draw(PGraphics graphics, float et){
@@ -85,17 +88,41 @@ public class AnimationController{
     }
   }
   
+  public void setPaused(boolean paused){
+    for(int i=0; i<=currentAnimatorIndex; i++){
+      animators[i].paused = paused; 
+    }  
+  }
+  
+  public boolean isPasued(){
+    return animators[currentAnimatorIndex].paused;    
+  }
+  
   public boolean isAnimating(){
     if(animators == null){
       return false;  
     }
-    for(int i=0; i<animators.length; i++){
-      if(animators[i].isAnimating()){
-        return true; 
-      }
-    }
     
-    return false; 
+    return animators[currentAnimatorIndex].isAnimating(); 
+    
+    //if(state == AnimationState.TransitionOut){
+    //  for(int i=animators.length-1; i>currentAnimatorIndex; i--){
+    //    if(animators[i].isAnimating())
+    //      return true;
+    //  }
+    //} else if(state == AnimationState.TransitionIn){
+    //  for(int i=0; i<=currentAnimatorIndex; i++){
+    //    if(animators[i].isAnimating())
+    //      return true;
+    //  }
+    //} else{
+    //  for(int i=0; i<animators.length; i++){
+    //    if(animators[i].isAnimating())
+    //      return true; 
+    //  }  
+    //}        
+    
+    //return false;  
   }
   
   public AnimationState getState(){
@@ -111,7 +138,6 @@ public class AnimationController{
       }
     }
   }
-  
 }
 
 public class Animator{
@@ -124,7 +150,7 @@ public class Animator{
   public void setState(AnimationState state){
     this.state = state;   
   }
-  
+ 
   public AnimationState getState(){
     return state;   
   }
@@ -137,6 +163,13 @@ public class Animator{
     return false;   
   }
   
+  public void hide(){
+    
+  }
+  
+  public void show(){
+    
+  }  
 }
 
 public class PixCollectionAnimator extends Animator{
@@ -152,10 +185,11 @@ public class PixCollectionAnimator extends Animator{
       return;   
     }
     
-    pixCollection.draw(graphics, et);
+    pixCollection.draw(graphics, et);    
     
     if(!paused && !pixCollection.isAnimating() && state != AnimationState.Idle){
       int nextLevel = pixCollection.currentLevel; 
+      
       nextLevel += state == AnimationState.TransitionIn ? 1 : -1; 
       
       if(nextLevel >= 0 && nextLevel <= pixCollection.levels-1){
@@ -169,6 +203,7 @@ public class PixCollectionAnimator extends Animator{
       return true;   
     }
     int currentLevel = pixCollection.currentLevel;
+    
     if(state == AnimationState.TransitionIn && currentLevel == pixCollection.levels -1)
       return false; 
       
@@ -177,11 +212,72 @@ public class PixCollectionAnimator extends Animator{
       
     return true; 
   }
+  
+  public void setState(AnimationState state){
+    super.setState(state); 
+  }
+}
+
+public class TextAnimator extends Animator{
+  public final float ALPHA_FADE_OUT_TIME = 500;
+  public final float ALPHA_FADE_IN_TIME = 2000;
+  
+  public int alpha = 0;   
+  public float elapsedTime = 0.0f;
+  public float animTime = ALPHA_FADE_OUT_TIME;
+  public PFont font;
+  public String text = "";
+  public int size = 150;
+  
+  public TextAnimator(PFont font, String text){
+    this.font = font; 
+    this.text = text; 
+  }
+  
+  public void draw(PGraphics graphics, float et){
+    if(text == null){
+      return;   
+    }
+    
+    if(!paused && state != AnimationState.Idle){
+      updateAlpha(et);
+    }
+    
+    graphics.textAlign(CENTER, CENTER);
+    graphics.fill(255, 255, 255, alpha);
+    graphics.noStroke(); 
+    graphics.textFont(font, size);
+    graphics.text(text, graphics.width/2, graphics.height/2);
+  }
+  
+  public void updateAlpha(float et){
+    elapsedTime += et; 
+    float t = elapsedTime / animTime; 
+    t = min(1.0f, max(t, 0.0f));     
+    
+    if(state == AnimationState.TransitionIn){
+      alpha = (int)(255 * t);         
+    } else if(state == AnimationState.TransitionOut){      
+      alpha = 255 - (int)(255 * t);
+    }
+  }
+  
+  public boolean isAnimating(){
+    return elapsedTime < animTime;  
+  }
+  
+  public void setState(AnimationState state){
+    super.setState(state); 
+    
+    animTime = state == AnimationState.TransitionIn ? ALPHA_FADE_IN_TIME : ALPHA_FADE_OUT_TIME;
+    
+    elapsedTime = 0.0f;     
+  } 
 }
 
 public class ImageAnimator extends Animator{
   
-  public final float ALPHA_FADE_TIME = 5000; 
+  public final float ALPHA_FADE_TIME = 2000; 
   
   public int width; 
   public int height; 
@@ -216,9 +312,9 @@ public class ImageAnimator extends Animator{
     t = min(1.0f, max(t, 0.0f));     
     
     if(state == AnimationState.TransitionIn){
-      alpha = (int)(255 * t);    
-    } else if(state == AnimationState.TransitionOut){
-      alpha = 255 - (int)(255 * t);  
+      alpha = (int)(255 * t);         
+    } else if(state == AnimationState.TransitionOut){      
+      alpha = 255 - (int)(255 * t);
     }
   }
   
@@ -230,5 +326,5 @@ public class ImageAnimator extends Animator{
     super.setState(state); 
     
     elapsedTime = 0.0f;     
-  }  
+  } 
 }

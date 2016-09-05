@@ -7,8 +7,13 @@ final String URL_NEXTIMAGE = "http://instacolour.herokuapp.com/api/nextimage?ran
 
 final String URL_COLOURISED_IMAGE = "http://instacolour.herokuapp.com/api/colourise";
 
-final long IMAGE_UPDATE_FREQUENCY = 120000;
+long IMAGE_UPDATE_FREQUENCY = 20000;
+
+long STATE_TIME_ELAPSED_FOR_IMAGE_UPDATE_THRESHOLD = 10000;
 
 final int OFFSCREEN_BUFFER_MAX_WIDTH = 500; 
 
-final int LEVELS_OF_DETAIL = 6; 
+final int LEVELS_OF_DETAIL = 7; 
+
+final int RESOLUTION_X = 80; // 40; // 60; // 80;
+final int RESOLUTION_Y = 60; // 20; // 40; // 60;

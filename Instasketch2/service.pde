@@ -1,14 +1,11 @@
 
-boolean isFetchingImage = false; 
-float lastImageTimestamp = 0.0f; 
 
 void requestNextImage(){
   if (isFetchingImage) {
     return;
   }  
   
-  isFetchingImage = true;   
-  lastImageTimestamp = millis();  
+  setFetchingImage(true);   
   thread("fetchNextImage");
 }
 
@@ -30,23 +27,23 @@ void fetchNextImage() {
   fetchAndSetColoursiedImage(imageDetails); 
   
   // now resize to be used as the source for the new pixels 
-  int xRes = 40; // 60; // 80;
-  int yRes = 20; // 40; // 60;
-  
-  println("xRes " + xRes); 
-  
   PImage sampleImage = sourceImage.copy(); 
-  sampleImage.resize(xRes, yRes);
+  sampleImage.resize(RESOLUTION_X, RESOLUTION_Y);
   
   if(pixCollection == null){
-    pixCollection = createPixCollection(xRes, yRes, (int)width, (int)height, LEVELS_OF_DETAIL, sampleImage, imageDetails.myColour);   
+    pixCollection = createPixCollection(RESOLUTION_X, RESOLUTION_Y, (int)width, (int)height, LEVELS_OF_DETAIL, sampleImage, imageDetails.myColour);   
+  } else{
+    initPixCollection(pixCollection, sampleImage, imageDetails.myColour);
   }
   
-  animationController.init(sourceImage, orgSourceImage, pixCollection);    
+  animationController.init(sourceImage, orgSourceImage, pixCollection);
+  
+  setColourDetails(imageDetails.myColour, imageDetails.myColourName); 
   
   println("create pixCollection"); 
-   
-  isFetchingImage = false;   
+  
+  lastImageTimestamp = millis();
+  setFetchingImage(false);   
 }
 
 void fetchAndSetImage(ImageDetails imageDetails){  

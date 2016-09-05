@@ -3,6 +3,7 @@ class ImageDetails{
   int swatchIndex = 0; 
   JSONObject obj; 
   color myColour; 
+  String myColourName = "Colour Name";
   
   ImageDetails(JSONObject obj, int swatchIndex){
     this.obj = obj; 
