@@ -11,36 +11,42 @@ void requestNextImage(){
 
 void fetchNextImage() {
   println("--- fetchNextImage ---");
-
-  JSONObject responseJSON = loadJSONObject(URL_NEXTIMAGE);
+  
+  String url = "";
+  
+  if(configManager.isMaster()){ // only the MASTER progresses through the queue, the others (SLAVES) just pull down the current image. 
+    url = URL_POP;  
+  } else{
+    url = URL_PEEK;
+  }
+  
+  url += "?pi_index=" + configManager.piIndex;
+  
+  println("POSTING: " + url); 
+  JSONObject responseJSON = loadJSONObject(url);
   if(responseJSON == null){
     // TODO; handle exception 
     return; 
-  }  
-  
-  // NB: this will be a constant (ie each PI will be assigned a palette index) value in production 
-  myPaletteIndex = getSwatchIndexFromPalette(responseJSON.getJSONObject("next_image"));     
+  }   
     
-  ImageDetails imageDetails = new ImageDetails(responseJSON.getJSONObject("next_image"), myPaletteIndex);         
+  ImageDetails imageDetails = new ImageDetails(responseJSON.getJSONObject("next_image"), configManager.piIndex);         
   
-  fetchAndSetImage(imageDetails);
+  fetchAndSetImage(imageDetails);  
   fetchAndSetColoursiedImage(imageDetails); 
   
   // now resize to be used as the source for the new pixels 
   PImage sampleImage = sourceImage.copy(); 
-  sampleImage.resize(RESOLUTION_X, RESOLUTION_Y);
+  sampleImage.resize(configManager.resolutionX, configManager.resolutionY);
   
   if(pixCollection == null){
-    pixCollection = createPixCollection(RESOLUTION_X, RESOLUTION_Y, (int)width, (int)height, LEVELS_OF_DETAIL, sampleImage, imageDetails.myColour);   
+    pixCollection = createPixCollection(configManager.resolutionX, configManager.resolutionY, (int)width, (int)height, configManager.levelsOfDetail, sampleImage, imageDetails.myColour);   
   } else{
     initPixCollection(pixCollection, sampleImage, imageDetails.myColour);
   }
   
   animationController.init(sourceImage, orgSourceImage, pixCollection);
   
-  setColourDetails(imageDetails.myColour, imageDetails.myColourName); 
-  
-  println("create pixCollection"); 
+  setColourDetails(imageDetails.myColour, imageDetails.myColourName, imageDetails.getImageId());  
   
   lastImageTimestamp = millis();
   setFetchingImage(false);   
@@ -49,7 +55,7 @@ void fetchNextImage() {
 void fetchAndSetImage(ImageDetails imageDetails){  
   // call the colourise service imageDetails){
   String imageUrl = imageDetails.getImageSrc();
-  println("posting: " + imageUrl); 
+  println("POSTING: " + imageUrl); 
   
   PImage image = loadImage(imageUrl, "jpg");
   
@@ -89,8 +95,8 @@ void fetchAndSetImage(ImageDetails imageDetails){
 
 void fetchAndSetColoursiedImage(ImageDetails imageDetails){
   // call the colourise service 
-  String colouriseUrl = URL_COLOURISED_IMAGE + "?image_url=" + imageDetails.getImageSrc() + "&colours=6" + "&swatch_index=" + myPaletteIndex;
-  println("posting: " + colouriseUrl); 
+  String colouriseUrl = URL_COLOURISED_IMAGE + "?image_url=" + imageDetails.getImageSrc() + "&colours=5" + "&swatch_index=" + configManager.piIndex;
+  println("POSTING: " + colouriseUrl); 
   
   PImage colourisedImage = loadImage(colouriseUrl, "jpg");
   
@@ -144,5 +150,5 @@ int getSwatchIndexFromPalette(JSONObject nextImageJson){
     }
   } 
   
-  return myPaletteIndex; 
+  return 0; 
 }

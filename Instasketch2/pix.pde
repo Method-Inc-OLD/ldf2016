@@ -1,7 +1,8 @@
 
 class Pix{
   
-  public final float DEFAULT_ANIM_TIME = 100.0f; 
+  public final float DEFAULT_ANIM_TIME = 100.0f;
+  public final float VARIANCE = 5.0f; 
   
   public int x; 
   public int y; 
@@ -11,6 +12,7 @@ class Pix{
   public color[] colours; 
   public color srcColour = color(255, 255, 255); 
   public color dstColour = color(255, 255, 255); 
+  public color currentColour = color(255, 255, 255);
   
   public float elapsedTime = 0.0f;
   
@@ -27,15 +29,16 @@ class Pix{
     this.colours = new color[levels];
     this.animTimes = new float[levels]; 
     for(int i=0; i<levels; i++){
-      this.animTimes[i] = DEFAULT_ANIM_TIME; 
+      this.animTimes[i] = DEFAULT_ANIM_TIME + random(-VARIANCE, VARIANCE);; 
     }
   }
   
-  public void draw(PGraphics graphics, float et){
+  public void update(float et){
     elapsedTime += et; 
-    
-    color currentColour = getCurrentColour();
-    
+    currentColour = getCurrentColour();
+  }
+  
+  public void draw(PGraphics graphics){                
     graphics.fill(currentColour);
     graphics.stroke(currentColour);
     graphics.rect( x * w, y * h, w, h);
@@ -99,9 +102,7 @@ class Pix{
     }
   }
   
-  public void setColour(color newColour, int level){
-    if(x == 0 && y == 0)
-      println("setColour at level " + level); 
+  public void setColour(color newColour, int level){ 
     if(level < 0 || level >= colours.length)
       return; 
       

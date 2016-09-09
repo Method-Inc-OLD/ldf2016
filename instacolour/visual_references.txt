@@ -1,5 +1,0 @@
-http://processingjs.org/learning/
-http://www.devlounge.net/code/10-awesome-html5-canvas-examples
-http://www.queness.com/post/4650/10-jaw-dropping-html5-and-javascript-effects
-http://code.tutsplus.com/articles/21-ridiculously-impressive-html5-canvas-experiments--net-14210
-http://lab.hakim.se/trail/03/

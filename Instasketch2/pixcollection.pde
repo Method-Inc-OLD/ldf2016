@@ -10,7 +10,9 @@ class PixCollection{
   
   public Pix[][] pixies; 
   
-  private boolean animating = false; 
+  public boolean paused = false; 
+  
+  private boolean animating = false;   
   
   public PixCollection(){
     
@@ -21,10 +23,15 @@ class PixCollection{
       
       for(int y=0; y<sourceYRes; y++){
         for(int x=0; x<sourceXRes; x++){
-          pixies[y][x].draw(graphics, et); 
-          if(pixies[y][x].isAnimating()){
-            animating = true;     
+          Pix pix = pixies[y][x];
+          if(!paused){
+              pix.update(et); 
+              if(!animating && pix.isAnimating()){
+                animating = true;  
+              }
           }
+          
+          pixies[y][x].draw(graphics);
         }
       }            
   }  
@@ -44,7 +51,7 @@ class PixCollection{
   }
   
   public void setLevel(int level){
-    println("PixCollection; setting level to " + level); 
+    //println("PixCollection; setting level to " + level); 
     currentLevel = level; 
     
     for(int y=0; y<sourceYRes; y++){
@@ -71,11 +78,17 @@ public PixCollection createPixCollection(int xRes, int yRes, int w, int h, int l
   for(int y=0; y<yRes; y++){
     for(int x=0; x<xRes; x++){
       Pix pix = new Pix(x, y, pixWidth, pixHeight, levels+1); 
-      pix.setColour(imageMainColour, 0); 
+      pix.setColour(imageMainColour, 0);                 
+      
       pixCollection.pixies[y][x] = pix;
-      setPixelColours(pix, levels, image); 
-      pix.setLevel(0, color(255, 255, 255));
-      pix.setAnimTime(2000.0f, 0); 
+      setPixelColours(pix, levels, image);
+      
+      // set source colour and animation time for LEVEL 0
+      //float index = y * xRes + x; 
+      //float animTimeForLevel0 = 5.0f + index * 1.0f;   
+      //float animTimeForLevel0 = 100.0f; 
+      pix.setLevel(0, color(255, 255, 255));      
+      //pix.setAnimTime(animTimeForLevel0, 0); 
     }
   }
     
@@ -95,7 +108,7 @@ public PixCollection initPixCollection(PixCollection pixCollection, PImage image
       pix.setColour(imageMainColour, 0); 
       pixCollection.pixies[y][x] = pix;
       setPixelColours(pix, pixCollection.levels, image);
-      pix.setLevel(pixCollection.currentLevel, currentColour);
+      pix.setLevel(pixCollection.currentLevel, currentColour);          
     }
   }
     

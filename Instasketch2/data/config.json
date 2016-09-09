@@ -1,0 +1,14 @@
+{
+	"pi_index": 0, 
+	"name": "instacolour1", 	
+	"image_update_frequency": 120000,
+	"elapsed_state_idle_time_before_image_update": 30000, 
+	"offscreen_buffer_max_width": 400, 
+	"levels_of_detail": 6, 
+	"resolution_x": 36, 
+	"resolution_y": 24, 
+	"ping_frequency": 1200000, 
+	"register_frequency": 2700000, 
+	"distance_medium": 150, 
+	"distance_close":50  
+}
