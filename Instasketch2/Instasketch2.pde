@@ -137,8 +137,7 @@ void draw(){
     offscreenBuffer.fill(255, 255, 255, 255);
     offscreenBuffer.noStroke(); 
     offscreenBuffer.textFont(statusFont, 12);
-    offscreenBuffer.text("DISTANCE: " + proximityDetector.getDistance() + "(" + proximityDetector.updatesPerSecond + ")", 20, 50);
-    //offscreenBuffer.text("DISTANCE: " + proximityDetector.rawDistance, 20, 50);    
+    offscreenBuffer.text("DISTANCE: " + proximityDetector.getDistance() + "(" + proximityDetector.updatesPerSecond + ")", 20, 50);    
   }
     
   offscreenBuffer.endDraw();

@@ -28,8 +28,6 @@ class ProximityDetector{
   
   final int QUEUE_SIZE = 1;  
   
-  final int RANGE_CHANGE_DOWN_THRESHOLD = 5; 
-  final int RANGE_CHANGE_UP_THRESHOLD = 10; 
   int rangeChangeTicks = 0; 
   
   float rawDistance = 0.0f; 
@@ -83,8 +81,8 @@ class ProximityDetector{
     
     rangeChangeTicks++; 
     
-    if(currentRange == ProximityRange.Undefined || (range.getValue() < currentRange.getValue() && rangeChangeTicks >= RANGE_CHANGE_DOWN_THRESHOLD) || 
-        (range.getValue() > currentRange.getValue() && rangeChangeTicks >= RANGE_CHANGE_UP_THRESHOLD)){
+    if(currentRange == ProximityRange.Undefined || (range.getValue() < currentRange.getValue() && rangeChangeTicks >= configManager.proximityRangeDownChangeThreshold) || 
+        (range.getValue() > currentRange.getValue() && rangeChangeTicks >= configManager.proximityRangeUpChangeThreshold)){
       rangeChangeTicks = 0;
       rangeChangedTimestamp = millis(); 
       this.previousRange = this.currentRange; 

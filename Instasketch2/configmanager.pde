@@ -9,16 +9,30 @@ public class ConfigManager{
   public int piIndex = -1; 
   public String name = "";  
   
+  /** how frequently to update the image **/ 
   public long imageUpdateFrequency = 300000; 
+  /** elapsed time within the TransitionOut state before updating the image **/ 
   public long elapsedStateIdleTimeBeforeImageUpdate = 30000; 
+  /** max width to which the downloaded images will be resized to - used to aspect fil resizing **/ 
   public int offscreenBufferMaxWidth = 500; 
+  /** how many 'levels' of details the images is decomposed into for the in and out transition **/ 
   public int levelsOfDetail = 7; 
-  public int resolutionX = 32; 
-  public int resolutionY = 24; 
+  /** x resolution the images is reduced to for pixelation **/ 
+  public int resolutionX = 32;
+  /** y resolution the images is reduced to for pixelation **/
+  public int resolutionY = 24;
+  /** how frequently the pi will register itself **/ 
   public int registerFrequency = 1800000;
+  /** how frequently the pi will ping (aka heartbeat) **/
   public int pingFrequency = 120000;
+  /** distance used to determine when the user in within proximity **/ 
   public float distanceMedium = 120; 
+  /** distance used to determine when the user is 'close' **/ 
   public float distanceClose = 50;
+  /** how many times the range state has to be different than the current state before being updated (when transitioning up i.e. close -> far ) **/ 
+  public int proximityRangeUpChangeThreshold = 10;
+  /** how many times the range state has to be different than the current state before being updated (when transitioning up i.e. far -> close ) **/
+  public int proximityRangeDownChangeThreshold = 5;
   
   public float lastServerPing =  0;
   public float lastRegisterRequest =  0;
@@ -162,6 +176,8 @@ public class ConfigManager{
     registerFrequency = json.getInt("register_frequency");
     distanceMedium = json.getFloat("distance_medium");
     distanceClose = json.getInt("distance_close");
+    proximityRangeUpChangeThreshold = json.getInt("proximity_range_up_change_threshold");
+    proximityRangeDownChangeThreshold = json.getInt("proximity_range_down_change_threshold");
   }
   
   void initIPAddress(){

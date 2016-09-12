@@ -10,5 +10,7 @@
 	"ping_frequency": 1200000, 
 	"register_frequency": 2700000, 
 	"distance_medium": 210, 
-	"distance_close": 120  
+	"distance_close": 120, 
+	"proximity_range_up_change_threshold": 10, 
+	"proximity_range_down_change_threshold": 5 
 }
