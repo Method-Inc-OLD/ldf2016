@@ -9,77 +9,48 @@ enum ProximityRange{
 /** factory method **/ 
 ProximityDetector createProximityDetector(){
   ProximityDetector pd;
-  if(IS_DEV){
-    pd = new MockProximityDetector();
-  } else{
-    //pd = new UltrasonicProximityDetector();  
-  }
+   pd = new MockProximityDetector();
+  //pd = new UltrasonicProximityDetector();
   
   return pd; 
 }
 
 class ProximityDetector{
   
-  final int QUEUE_SIZE = 4; 
-  
-  boolean logging = false; 
-  float loggingFrequency = 1000.0f;
-  float lastLogTimestamp = 0.0f; 
-  
-  PrintWriter logPrintWriter;
+  final int QUEUE_SIZE = 1;  
   
   float rawDistance = 0.0f; 
   
   FloatList distanceQueue = new FloatList();  
   
-  float rangeChangedTimestamp = 0.0f; 
+  float rangeChangedTimestamp = 0.0f;
+  
+  int updatesPerSecond = 0; // counter of how many updates occur per second 
+  float elapsedTimeSinceUpdate = 0; 
+  float lastUpdateTimestamp = 0;
+  int updatesPerSecondCounter = 0;
   
   ProximityRange previousRange = ProximityRange.Undefined; 
   ProximityRange currentRange = ProximityRange.Undefined;
   
   ProximityDetector(){
-    if(logging){
-      initLogPrintWriter();   
-    }
-  }
-  
-  void setLogging(boolean logging){
-    this.logging = logging; 
-    if(!this.logging){
-      if(logPrintWriter != null){
-        logPrintWriter.close(); 
-        logPrintWriter = null; 
-      }
-    } else{
-      if(logPrintWriter == null){
-        initLogPrintWriter();   
-      }
-    }
-  }
-  
-  void initLogPrintWriter(){        
-    logPrintWriter = createWriter("proximitydetector" + ".log");   
+    
   }
   
   public void update(){
-    if(logging){
-      updateLog();   
-    }
-  }
-  
-  String getLogPrefix(){
-    return day() + month() + year() + "-" + hour() + minute();  
-  }
-  
-  void updateLog(){
-    if(millis() - lastLogTimestamp < loggingFrequency)
-      return; 
+    float et = millis() - lastUpdateTimestamp; 
+    lastUpdateTimestamp = millis(); 
     
-    lastLogTimestamp = millis(); 
+    elapsedTimeSinceUpdate += et;        
     
-    logPrintWriter.println(getLogPrefix() + ": " + getDistance());
-    logPrintWriter.flush(); 
-  }
+    if(elapsedTimeSinceUpdate >= 1000){
+      updatesPerSecond = updatesPerSecondCounter; 
+      updatesPerSecondCounter = 0; 
+      elapsedTimeSinceUpdate -= 1000;
+    }    
+    
+    updatesPerSecondCounter += 1;
+  }    
   
   boolean onKeyDown(int keyCode){
     return false; 

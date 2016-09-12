@@ -1,7 +1,6 @@
+ 
 
-final boolean IS_DEV = true; 
-
-final int FRAME_RATE = 12; 
+final int FRAME_RATE = 22; 
 
 final boolean SHOW_FRAME_RATE = true;
 

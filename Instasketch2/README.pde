@@ -1,6 +1,9 @@
 /**
 # London Design Festival 2016 
 
+## Copying files to the PI 
+(LOCAL MACHINE) $ scp -rp Instasketch2 pi@instacolour1.local:/home/pi/
+
 ## ultrasonic sensor 
 https://www.modmypi.com/blog/hc-sr04-ultrasonic-range-sensor-on-the-raspberry-pi
 http://www.instructables.com/id/Easy-ultrasonic-4-pin-sensor-monitoring-hc-sr04/

@@ -279,9 +279,9 @@ public class TextAnimator extends Animator{
     
     graphics.textAlign(CENTER, CENTER);
     graphics.fill(255, 255, 255, alpha);
-    graphics.noStroke(); 
-    //graphics.textFont(font, size);
-    graphics.textFont(font);
+    graphics.stroke(255, 255, 255, alpha); 
+    graphics.textFont(font, size);
+    //graphics.textFont(font);
     graphics.text(text, graphics.width/2, graphics.height/2);
   }
   

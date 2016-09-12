@@ -71,7 +71,7 @@ void initConfigManager(){
 }
 
 void initOverlay(){
-  font = loadFont("Jungka-Regular-70.vlw");
+  font = loadFont("Helvetica-70.vlw");
   statusFont = loadFont("courier-12.vlw");
   
   textOverlayAnimator = new TextAnimator(font, "");
@@ -138,7 +138,7 @@ void draw(){
     offscreenBuffer.fill(255, 255, 255, 255);
     offscreenBuffer.noStroke(); 
     offscreenBuffer.textFont(statusFont, 12);
-    offscreenBuffer.text("DISTANCE: " + proximityDetector.getDistance(), 20, 50);
+    offscreenBuffer.text("DISTANCE: " + proximityDetector.getDistance() + "(" + proximityDetector.rawDistance + ")", 20, 50);
     //offscreenBuffer.text("DISTANCE: " + proximityDetector.rawDistance, 20, 50);    
   }
     

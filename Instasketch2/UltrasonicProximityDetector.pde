@@ -45,13 +45,10 @@
 
 //    lastUpdated = millis(); 
 //    updating = true; 
-//    rawDistance = measureAverage();  
-
-//    if (previousReading == -1 || Math.abs(rawDistance-previousReading) < 200) {
-//      previousReading = rawDistance;
-//      setDistance(rawDistance);
-//      //println("currentDistance " + currentAvgDistance + ", smoothed distance " + getDistance());
-//    }            
+//    rawDistance = measureAverage();     
+    
+//    previousReading = rawDistance;
+//    setDistance(rawDistance);
 
 //    updating = false;
 //  }
