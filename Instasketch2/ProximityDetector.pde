@@ -18,8 +18,8 @@ enum ProximityRange{
 /** factory method **/ 
 ProximityDetector createProximityDetector(){
   ProximityDetector pd;
-   pd = new MockProximityDetector();
-  //pd = new UltrasonicProximityDetector();
+   //pd = new MockProximityDetector();
+  pd = new UltrasonicProximityDetector();
   
   return pd; 
 }

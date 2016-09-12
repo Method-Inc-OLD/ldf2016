@@ -44,8 +44,7 @@ void setup() {
   frameRate(FRAME_RATE);
   
   //size(720, 480, P2D);  
-  //fullScreen(P2D);   
-  size(720, 480);
+  fullScreen(P2D);   
   
   pApplet = this;
   
@@ -61,8 +60,7 @@ void setup() {
   surface.setResizable(false);
   
   animationController = new AnimationController(width, height); 
-  //offscreenBuffer = createGraphics(width, height, P2D);    
-  offscreenBuffer = createGraphics(width, height);
+  offscreenBuffer = createGraphics(width, height, P2D);    
   lastUpdateTimestamp = millis();
   
   initOverlay();     
@@ -125,7 +123,6 @@ void draw(){
   offscreenBuffer.beginDraw();    
      
   animationController.draw(offscreenBuffer, et);
-  textOverlayAnimator.draw(offscreenBuffer, et);
      
   if(SHOW_FRAME_RATE){
     offscreenBuffer.textAlign(LEFT, TOP);
@@ -147,6 +144,10 @@ void draw(){
   offscreenBuffer.endDraw();
   
   image(offscreenBuffer, 0, 0, width, height);  
+  
+  // rendering the text over the tiles (outside the OpenGL context) to resolve the bug of 
+  // certain characters being missing from the text 
+  textOverlayAnimator.draw(this.g, et);
   
   if(readyToTransitionNewColour){
     float elapsedTime = millis() - readyToTransitionNewColourTimestamp; 

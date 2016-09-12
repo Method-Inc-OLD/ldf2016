@@ -261,7 +261,7 @@ public class TextAnimator extends Animator{
   public float animTime = ALPHA_FADE_OUT_TIME;
   public PFont font;
   public String text = "";
-  public int size = 70;
+  public int size = 60;
   
   public TextAnimator(PFont font, String text){
     this.font = font; 
@@ -281,7 +281,7 @@ public class TextAnimator extends Animator{
     graphics.fill(255, 255, 255, alpha);
     graphics.stroke(255, 255, 255, alpha); 
     graphics.textFont(font, size);
-    //graphics.textFont(font);
+    graphics.textFont(font);
     graphics.text(text, graphics.width/2, graphics.height/2);
   }
   
