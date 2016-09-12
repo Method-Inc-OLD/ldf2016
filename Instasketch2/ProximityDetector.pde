@@ -1,9 +1,18 @@
 enum ProximityRange{
-  Undefined, 
-  Close, 
-  Medium, 
-  MediumFar, 
-  Far 
+  Undefined(-1), 
+  Close(0), 
+  Medium(1), 
+  Far(2); 
+  
+  private final int value;
+  
+  private ProximityRange(int value) {
+    this.value = value;
+  }
+
+  public int getValue() {
+    return value;
+  }
 }
 
 /** factory method **/ 
@@ -19,6 +28,10 @@ class ProximityDetector{
   
   final int QUEUE_SIZE = 1;  
   
+  final int RANGE_CHANGE_DOWN_THRESHOLD = 5; 
+  final int RANGE_CHANGE_UP_THRESHOLD = 10; 
+  int rangeChangeTicks = 0; 
+  
   float rawDistance = 0.0f; 
   
   FloatList distanceQueue = new FloatList();  
@@ -31,13 +44,15 @@ class ProximityDetector{
   int updatesPerSecondCounter = 0;
   
   ProximityRange previousRange = ProximityRange.Undefined; 
-  ProximityRange currentRange = ProximityRange.Undefined;
+  ProximityRange currentRange = ProximityRange.Undefined;    
   
   ProximityDetector(){
     
   }
   
   public void update(){
+    
+    // ** update frequency, for debugging purposes - looking at how quickly the proximity is being refreshed. ** //  
     float et = millis() - lastUpdateTimestamp; 
     lastUpdateTimestamp = millis(); 
     
@@ -61,12 +76,20 @@ class ProximityDetector{
   }  
   
   public void setCurrentRange(ProximityRange range){
-    if(range != this.currentRange && millis() - rangeChangedTimestamp < 50){
-      return; // mitigate flipping between states; only change if a range has been set for longer than X   
+    if(range == currentRange){
+      rangeChangeTicks = 0; 
+      return; 
     }
-    rangeChangedTimestamp = millis(); 
-    this.previousRange = this.currentRange; 
-    this.currentRange = range; 
+    
+    rangeChangeTicks++; 
+    
+    if(currentRange == ProximityRange.Undefined || (range.getValue() < currentRange.getValue() && rangeChangeTicks >= RANGE_CHANGE_DOWN_THRESHOLD) || 
+        (range.getValue() > currentRange.getValue() && rangeChangeTicks >= RANGE_CHANGE_UP_THRESHOLD)){
+      rangeChangeTicks = 0;
+      rangeChangedTimestamp = millis(); 
+      this.previousRange = this.currentRange; 
+      this.currentRange = range;
+    }        
   }
   
   public ProximityRange getCurrentRange(){
@@ -85,7 +108,7 @@ class ProximityDetector{
     return total / distanceQueue.size();  
   }
   
-  public void setDistance(float distance){
+  public void updateDistance(float distance){
     distanceQueue.append(distance);
     
     while(distanceQueue.size() > QUEUE_SIZE){
@@ -109,15 +132,15 @@ class MockProximityDetector extends ProximityDetector{
   
   public MockProximityDetector(){
     super(); 
-    setDistance(150); 
+    updateDistance(150); 
   }
   
   boolean onKeyDown(int keyCode){    
     if(keyCode == UP){
-      setDistance(getDistance() + DISTANCE_INCREMENT); 
+      updateDistance(getDistance() + DISTANCE_INCREMENT); 
       return true; 
     } else if(keyCode == DOWN){
-      setDistance(getDistance() - DISTANCE_INCREMENT); 
+      updateDistance(getDistance() - DISTANCE_INCREMENT); 
       return true;
     }
     

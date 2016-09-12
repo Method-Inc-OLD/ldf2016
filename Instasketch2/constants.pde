@@ -1,6 +1,6 @@
  
 
-final int FRAME_RATE = 22; 
+final int FRAME_RATE = 12; // max frame rate we're getting from the PI at a resolution of 720x480 
 
 final boolean SHOW_FRAME_RATE = true;
 

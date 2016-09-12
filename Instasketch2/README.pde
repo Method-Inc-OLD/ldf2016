@@ -69,4 +69,7 @@ StartupNotify=false
 $ ps aux | grep processing
 $ sudo kill PID (first numerical value on table) 
 
+### Copying to the PI
+scp -rp Instasketch2 pi@instacolour1.local:/home/pi/
+
 **/

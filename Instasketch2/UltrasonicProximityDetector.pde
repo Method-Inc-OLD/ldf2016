@@ -48,7 +48,7 @@
 //    rawDistance = measureAverage();     
     
 //    previousReading = rawDistance;
-//    setDistance(rawDistance);
+//    updateDistance(rawDistance);
 
 //    updating = false;
 //  }

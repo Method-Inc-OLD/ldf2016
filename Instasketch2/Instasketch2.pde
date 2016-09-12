@@ -43,8 +43,9 @@ void setup() {
     
   frameRate(FRAME_RATE);
   
-  size(720, 480, P2D);
+  //size(720, 480, P2D);  
   //fullScreen(P2D);   
+  size(720, 480);
   
   pApplet = this;
   
@@ -60,7 +61,8 @@ void setup() {
   surface.setResizable(false);
   
   animationController = new AnimationController(width, height); 
-  offscreenBuffer = createGraphics(width, height, P2D);    
+  //offscreenBuffer = createGraphics(width, height, P2D);    
+  offscreenBuffer = createGraphics(width, height);
   lastUpdateTimestamp = millis();
   
   initOverlay();     
@@ -138,7 +140,7 @@ void draw(){
     offscreenBuffer.fill(255, 255, 255, 255);
     offscreenBuffer.noStroke(); 
     offscreenBuffer.textFont(statusFont, 12);
-    offscreenBuffer.text("DISTANCE: " + proximityDetector.getDistance() + "(" + proximityDetector.rawDistance + ")", 20, 50);
+    offscreenBuffer.text("DISTANCE: " + proximityDetector.getDistance() + "(" + proximityDetector.updatesPerSecond + ")", 20, 50);
     //offscreenBuffer.text("DISTANCE: " + proximityDetector.rawDistance, 20, 50);    
   }
     
