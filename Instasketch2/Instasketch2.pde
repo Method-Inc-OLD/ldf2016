@@ -81,8 +81,8 @@ void asyncInitConfigManager(){
 }
 
 void initProximityDetector(){  
-   proximityDetector = new MockProximityDetector();
-  //proximityDetector = new UltrasonicProximityDetector();  
+  //proximityDetector = new MockProximityDetector();
+  proximityDetector = new UltrasonicProximityDetector();  
 }
 
 void initFontsAndTextOverlay(){
@@ -281,6 +281,10 @@ void onImageFetchComplete(LDFServiceAPI caller){
   if(pairCommunicationService != null){
     pairCommunicationService.updatePairsOfNewImageId(ldfService.getImageId());   
   }
+}
+
+void onImageFetchFailed(LDFServiceAPI caller){
+  println("onImageFetchFailed");
 }
 
 void moveToNextImage(){

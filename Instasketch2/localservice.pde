@@ -13,6 +13,8 @@ class LocalService{
   
   private ConfigManager config; 
   
+  private float lastInitTimestamp = 0.0f; 
+  
   private Server server; 
   private Client client; 
 
@@ -22,11 +24,18 @@ class LocalService{
   }
   
   private void init(){
+    // throttle how frequently this is called 
+    if(millis() - lastInitTimestamp < 500){
+      return;   
+    }
+    
     if(getPIIndex() == 0){
       initServer();         
     } else{
       initClient();   
     }
+    
+    lastInitTimestamp = millis(); 
   }
   
   private void initServer(){

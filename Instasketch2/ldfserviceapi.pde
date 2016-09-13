@@ -70,26 +70,37 @@ class LDFServiceAPI{
     url += "?pi_index=" + configManager.piIndex;    
          
     log("POSTING: " + url);
-    JSONObject responseJSON = loadJSONObject(url);
+    
+    JSONObject responseJSON = null; 
+    
+    try{
+      responseJSON = loadJSONObject(url);
+    } catch(Exception e){}
+    
     if(responseJSON == null){
-      // TODO; handle exception 
+      setFetchingImage(false);
+      onImageFetchFailed(this); 
       return; 
     }   
       
     imageDetails = new ImageDetails(responseJSON.getJSONObject("next_image"), configManager.piIndex);         
     
-    fetchAndSetImage(imageDetails); 
-    
-    fetchAndSetColoursiedImage(imageDetails); 
+    try{
+      fetchAndSetImage(imageDetails);
+      fetchAndSetColoursiedImage(imageDetails);
+    } catch(Exception e){
+      setFetchingImage(false);
+      onImageFetchFailed(this);
+      return;
+    }
     
     // now resize to be used as the source for the new pixels 
     sampleImage = colourisedImage.copy(); 
     sampleImage.resize(configManager.resolutionX, configManager.resolutionY);        
     
-    onImageFetchComplete(this);      
-    
     lastImageTimestamp = millis();
-    setFetchingImage(false);       
+    setFetchingImage(false);    
+    onImageFetchComplete(this);                    
   } 
   
   String getColourName(){

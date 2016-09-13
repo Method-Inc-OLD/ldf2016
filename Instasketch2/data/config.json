@@ -1,5 +1,5 @@
 {
-	"pi_index": 0, 
+	"pi_index": 1, 
 	"name": "instacolour1", 	
 	"image_update_frequency": 30000,
 	"elapsed_state_idle_time_before_image_update": 30000, 
