@@ -45,7 +45,7 @@ public class ConfigManager{
   private boolean finishedInitilising = false; 
   
   private String currentImageId = "";
-  private int stateChangedCounter = 0;   
+  private int stateChangedCounter = 0;
   
   public ConfigManager(){
     initFromFile();     
@@ -75,12 +75,11 @@ public class ConfigManager{
     return piIndex == 0;   
   }
   
-  public void update(String currentImageId, int stateChangedCounter){
+  public void update(int stateChangedCounter){
     if(hostAddress == null){
       return;   
     }
     
-    this.currentImageId = currentImageId; 
     this.stateChangedCounter += stateChangedCounter;
     
     if((millis() - lastRegisterRequest) > registerFrequency){
@@ -238,7 +237,18 @@ public class ConfigManager{
       }
     }
     
-    return null; 
+    Pair newPair = new Pair(index); 
+    pairs.add(newPair); 
+    
+    return newPair; 
+  }
+  
+  public int getPairCount(){
+    return pairs.size();   
+  }
+  
+  public Pair getPairAtIndex(int i){
+    return (Pair)this.pairs.get(i);   
   }
 }
 
@@ -248,9 +258,18 @@ class Pair{
   public String hostAddress = "";  
   
   public String currentImageId = "";
-  public boolean waitingForImage = false; 
+  public boolean waitingForImage = false;
+  public int currentAnimationState = -1;
+  
+  public int currentAction = -1; 
+  
+  public String currentMessage = "";
   
   public Pair(){}
+  
+  public Pair(int index){
+    this.index = index; 
+  }
   
   public Pair(int index, String hostAddress){
     this.index = index; 

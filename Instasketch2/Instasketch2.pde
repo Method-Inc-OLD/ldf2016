@@ -1,20 +1,21 @@
-
+import java.util.*; 
 
 PGraphics offscreenBuffer; 
 float lastUpdateTimestamp; 
 
-PImage sourceImage;
-PImage orgSourceImage; 
+int srcImageWidth; 
+int srcImageHeight; 
+PImage srcColourisedImage;
+PImage srcfullColourImage; 
 
-AnimationController animationController; 
 PixCollection pixCollection;   
+AnimationController animationController; 
 
 TextAnimator textOverlayAnimator; 
 PFont font;
 PFont statusFont; 
 
-boolean isFetchingImage = false; 
-float lastImageTimestamp = 0.0f;
+float imageUpdatedTimestamp = 0.0f; 
 float lastStateTimestamp = 0.0f;
 boolean requestedToUpdateImage = false; 
 
@@ -23,14 +24,16 @@ int stateChangedCounter = 0;
 
 ProximityDetector proximityDetector;
 
+LDFServiceAPI ldfService;
+
+boolean preparingToTransitionNewColour = false; 
 boolean readyToTransitionNewColour = false;  
 float readyToTransitionNewColourTimestamp = 0.0f; 
 
-color currentMainColour = color(255,255,255); 
-String currentColourName = "";
-String currentImageId = "";
+int isReadyToMoveToNextImageScore = 0; 
 
 ConfigManager configManager; 
+
 LocalService pairCommunicationService; 
 
 private static PApplet pApplet;
@@ -39,38 +42,50 @@ public static PApplet MainPApplet(){
   return pApplet;    
 }
 
-void setup() {   
+void setup() { 
     
-  frameRate(FRAME_RATE);
-  
-  //size(720, 480, P2D);  
-  fullScreen(P2D);   
-  
-  pApplet = this;
-  
-  noCursor();
-  
-  configManager = new ConfigManager();
-  thread("initConfigManager"); 
-  
-  proximityDetector = createProximityDetector(); 
-  
-  iniSourceImage(); 
+  frameRate(FRAME_RATE);  
+  size(720, 480, P2D);  
+  //fullScreen(P2D);
   
   surface.setResizable(false);
   
-  animationController = new AnimationController(width, height); 
-  offscreenBuffer = createGraphics(width, height, P2D);    
-  lastUpdateTimestamp = millis();
+  pApplet = this;
   
-  initOverlay();     
+  noCursor();    
+  
+  initConfigManager(); 
+  
+  initProximityDetector();
+  
+  iniSourceDimensions();    
+  
+  initLDFService(); 
+    
+  initAnimationController(); 
+  
+  initFontsAndTextOverlay();
+  
+  offscreenBuffer = createGraphics(width, height, P2D);  
+  
+  lastUpdateTimestamp = millis();       
 } 
 
 void initConfigManager(){
-  configManager.init();   
+  configManager = new ConfigManager();
+  thread("asyncInitConfigManager");  
 }
 
-void initOverlay(){
+void asyncInitConfigManager(){
+  configManager.init();     
+}
+
+void initProximityDetector(){  
+   proximityDetector = new MockProximityDetector();
+  //proximityDetector = new UltrasonicProximityDetector();  
+}
+
+void initFontsAndTextOverlay(){
   font = loadFont("Helvetica-70.vlw");
   statusFont = loadFont("courier-12.vlw");
   
@@ -78,21 +93,18 @@ void initOverlay(){
   textOverlayAnimator.hide(); 
 }
 
-void iniSourceImage(){    
+void initAnimationController(){
+  animationController = new AnimationController(width, height);  
+}
+
+void iniSourceDimensions(){    
   float aspectRatio = (float)height/(float)width;      
-  float w = min(configManager.offscreenBufferMaxWidth, width); 
-  float h = w * aspectRatio; 
-  
-  println("iniSourceImage " + width + "x" + height + ", aspect ratio " + aspectRatio);  
-  println("iniSourceImage - creating image with dimensions w " + w + "," + h); 
-   
-  sourceImage = createImage((int)w, (int)h, RGB);  
-  orgSourceImage = createImage((int)w, (int)h, RGB);
-  
-  for(int i=0; i<sourceImage.pixels.length; i++){
-      sourceImage.pixels[i] = color(255, 255, 255);
-      orgSourceImage.pixels[i] = color(255, 255, 255);
-  }  
+  srcImageWidth  = (int)(min(configManager.offscreenBufferMaxWidth, width)); 
+  srcImageHeight = (int)(srcImageWidth * aspectRatio);      
+}
+
+void initLDFService(){
+  ldfService = new LDFServiceAPI(srcImageWidth, srcImageHeight); 
 }
 
 void draw(){
@@ -108,7 +120,7 @@ void draw(){
     pairCommunicationService.update(et); 
   }
   
-  if(!isFetchingImage && !readyToTransitionNewColour){
+  if(!readyToTransitionNewColour){
     if(animationState == AnimationState.TransitionIn){
       if(!textOverlayAnimator.isAnimating() && textOverlayAnimator.getState() == AnimationState.TransitionOut && animationController.getState() != AnimationState.TransitionIn){
         animationController.setState(AnimationState.TransitionIn);  
@@ -148,11 +160,16 @@ void draw(){
   // certain characters being missing from the text 
   textOverlayAnimator.draw(this.g, et);
   
-  if(readyToTransitionNewColour){
+  if(preparingToTransitionNewColour){
+    if(isReadyToMoveToNextImage()){      
+      moveToNextImage();            
+    } 
+  }
+  else if(readyToTransitionNewColour){
     float elapsedTime = millis() - readyToTransitionNewColourTimestamp; 
     if(elapsedTime >= 5000 && !textOverlayAnimator.isAnimating()){
       animationController.setPaused(false);
-      textOverlayAnimator.text = currentColourName; 
+      textOverlayAnimator.text = ldfService.getColourName(); 
       readyToTransitionNewColour = false; 
       setAnimationState(AnimationState.TransitionOut); 
     }
@@ -170,20 +187,60 @@ void draw(){
 }
 
 void updateConfigManager(){
-  configManager.update(currentImageId, stateChangedCounter);
+  configManager.update(stateChangedCounter);
+}
+
+boolean isReadyToMoveToNextImage(){
+  if(configManager.currentImageId.length() == 0){
+    return true;   
+  }
+  
+  if(configManager.isMaster()){
+    // here we are keeping a 'score' (isReadyToMoveToNextImageScore) to ensure the system is stable and settled before 
+    // jumping to the next image i.e. we a slave has JUST transitioned to TransitionOut we want to wait a few 'ticks' to ensure 
+    // that the environment is 'stable' (remove noise) 
+    
+    // if all pairs are in a transition out and have the same image 
+    for(int i=0; i<configManager.getPairCount(); i++){
+      Pair p = configManager.getPairAtIndex(i); 
+      if(!p.currentImageId.equals(ldfService.getImageId())){
+        isReadyToMoveToNextImageScore = 0; 
+        return false;   
+      }
+      
+      if(p.currentAnimationState == AnimationState.TransitionIn.getValue()){
+        isReadyToMoveToNextImageScore = 0; 
+        return false;   
+      }
+    }        
+    
+    if(animationState == AnimationState.TransitionOut){
+      isReadyToMoveToNextImageScore += 1; 
+    } else{
+      isReadyToMoveToNextImageScore = 0;   
+    }
+    
+    return isReadyToMoveToNextImageScore >= 5; 
+  } else{
+    if(configManager.getMaster().currentAction != LocalService.ACTION_UPDATE_IMAGE){
+      return false;   
+    }
+    
+    return animationState == AnimationState.TransitionOut;
+  }
 }
 
 boolean isReadyForNewImage(){ 
-  boolean inValidState = !isFetchingImage && !readyToTransitionNewColour && animationState == AnimationState.TransitionOut && !animationController.isAnimating();  
-  boolean enoughTimeElapsed = millis() - lastImageTimestamp >= configManager.imageUpdateFrequency && configManager.isMaster();
+  boolean inValidState = !ldfService.isFetchingImage() && !readyToTransitionNewColour && animationState == AnimationState.TransitionOut && !animationController.isAnimating();
+  boolean alreadyHasNewImage = !configManager.currentImageId.equals(ldfService.getImageId()); 
+  boolean enoughTimeElapsed = (millis() - imageUpdatedTimestamp) >= configManager.imageUpdateFrequency && configManager.isMaster();
   boolean enoughTimeElapsedSinceStateChange = millis() - lastStateTimestamp >= configManager.elapsedStateIdleTimeBeforeImageUpdate;  
   
-  return inValidState && (enoughTimeElapsed || requestedToUpdateImage) && enoughTimeElapsedSinceStateChange; 
+  return inValidState && !alreadyHasNewImage && (enoughTimeElapsed || requestedToUpdateImage) && enoughTimeElapsedSinceStateChange; 
 }
 
 boolean isReadyToPollDistance(){
-  boolean inValidState =  !isFetchingImage && !readyToTransitionNewColour && proximityDetector.isReady(); 
-  return inValidState; 
+  return proximityDetector.isReady();  
 }
 
 void pollDistance(){
@@ -204,47 +261,53 @@ void updateProximityDetector(){
   proximityDetector.update();     
 }
 
-boolean isValidToTransitionState(){
-  return !isFetchingImage;  
-}
-
 void keyPressed() {
   if(proximityDetector.onKeyDown(keyCode)){
     return;   
   }
   
-  if(keyCode == 78 && !isFetchingImage){ // n
-    fetchNextImage(); 
+  if(keyCode == 78){ // n
+    requestNextImage(); 
   } else if(keyCode == 68){ // d
     pollDistance(); 
   }
 }
 
-void setFetchingImage(boolean val){
-  isFetchingImage = val;     
+void onImageFetchComplete(LDFServiceAPI caller){ 
+  println("onImageFetchComplete");
+  isReadyToMoveToNextImageScore = 0; 
+  preparingToTransitionNewColour = true; 
   
-  if(!val){    
-    readyToTransitionNewColour = true;
-    readyToTransitionNewColourTimestamp = millis();  
-    textOverlayAnimator.setState(AnimationState.TransitionOut);
-  } else{
-    requestedToUpdateImage = false; // reset flag  
-    
-    if(animationController != null)
-      animationController.setPaused(true);  
+  if(pairCommunicationService != null){
+    pairCommunicationService.updatePairsOfNewImageId(ldfService.getImageId());   
   }
 }
 
-void setColourDetails(color mainColour, String colourName, String imageId){
-  currentMainColour = mainColour; 
-  currentColourName = colourName; 
-  currentImageId = imageId; 
+void moveToNextImage(){
+  preparingToTransitionNewColour = false;  
+  imageUpdatedTimestamp = millis(); 
   
-  configManager.currentImageId = imageId; 
-  
-  if(pairCommunicationService != null){
-    pairCommunicationService.updatePairsOfNewImageId(configManager.currentImageId);   
+  if(pixCollection == null){
+    pixCollection = createPixCollection(configManager.resolutionX, configManager.resolutionY, (int)width, (int)height, configManager.levelsOfDetail, ldfService.sampleImage, ldfService.getColour());   
+  } else{
+    initPixCollection(pixCollection, ldfService.sampleImage, ldfService.getColour());
   }
+    
+  animationController.init(ldfService.colourisedImage, ldfService.fullColourImage, pixCollection);
+  
+  configManager.currentImageId = ldfService.getImageId();
+  readyToTransitionNewColour = true;
+  readyToTransitionNewColourTimestamp = millis();  
+  textOverlayAnimator.setState(AnimationState.TransitionOut);
+  
+  if(configManager.isMaster()){
+    pairCommunicationService.updatePairsOfAction(LocalService.ACTION_UPDATE_IMAGE);     
+  }
+}
+
+void requestNextImage(){
+  requestedToUpdateImage = false;   // reset flag 
+  ldfService.requestNextImage(); 
 }
 
 AnimationState getAnimationState(){
@@ -260,6 +323,9 @@ void setAnimationState(AnimationState state){
   
   if(changedState){
     lastStateTimestamp = millis();
+    if(pairCommunicationService != null){
+      pairCommunicationService.updatePairsOfNewAnimationState(state.getValue());
+    }
   }
   
   if(state == AnimationState.TransitionOut){       

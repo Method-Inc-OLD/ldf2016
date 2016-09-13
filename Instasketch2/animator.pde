@@ -1,8 +1,18 @@
 
 public enum AnimationState{
-  Idle, 
-  TransitionIn, 
-  TransitionOut 
+  Idle(0), 
+  TransitionIn(1), 
+  TransitionOut(2); 
+  
+  private final int value;
+  
+  private AnimationState(int value) {
+    this.value = value;
+  }
+
+  public int getValue() {
+    return value;
+  }
 }
 
 public class AnimationController{
@@ -124,25 +134,6 @@ public class AnimationController{
     }
     
     return animators[currentAnimatorIndex].isAnimating(); 
-    
-    //if(state == AnimationState.TransitionOut){
-    //  for(int i=animators.length-1; i>currentAnimatorIndex; i--){
-    //    if(animators[i].isAnimating())
-    //      return true;
-    //  }
-    //} else if(state == AnimationState.TransitionIn){
-    //  for(int i=0; i<=currentAnimatorIndex; i++){
-    //    if(animators[i].isAnimating())
-    //      return true;
-    //  }
-    //} else{
-    //  for(int i=0; i<animators.length; i++){
-    //    if(animators[i].isAnimating())
-    //      return true; 
-    //  }  
-    //}        
-    
-    //return false;  
   }
   
   public AnimationState getState(){

@@ -6,6 +6,8 @@ https://processing.org/reference/libraries/net/Server.html
 https://processing.org/reference/libraries/net/Client.html
 **/
 class LocalService{
+  
+  public static final int ACTION_UPDATE_IMAGE = 10; 
 
   private int port = 8888;
   
@@ -77,6 +79,30 @@ class LocalService{
     return true; 
   }
   
+  public boolean updatePairsOfNewAnimationState(int state){
+    if(server != null && isConnected()){      
+      println("SERVER: updatePairsOfNewImageId: writing " + config.piIndex + ":ANIMSTATE:" + state + "\n");      
+      server.write(config.piIndex + ":ANIMSTATE:" + state + "\n");  
+    } else if(client != null && isConnected()){
+      println("CLIENT: updatePairsOfNewImageId: writing " + config.piIndex + ":ANIMSTATE:" + state + "\n");      
+      client.write(config.piIndex + ":ANIMSTATE:" + state + "\n");
+    }        
+    
+    return true; 
+  }
+  
+  public boolean updatePairsOfAction(int action){
+    if(server != null && isConnected()){      
+      println("SERVER: updatePairsOfNewImageId: writing " + config.piIndex + ":ACTION:" + action + "\n");      
+      server.write(config.piIndex + ":ACTION:" + action + "\n");  
+    } else if(client != null && isConnected()){
+      println("CLIENT: updatePairsOfNewImageId: writing " + config.piIndex + ":ACTION:" + action + "\n");      
+      client.write(config.piIndex + ":ACTION:" + action + "\n");
+    }        
+    
+    return true; 
+  }
+  
   public void update(float et){
     if(!isConnected()){
       init(); 
@@ -125,7 +151,8 @@ class LocalService{
     int clientIndex = int(lineComponents[0]);
     String command = lineComponents[1]; 
     String data = lineComponents[2];
-            
+    
+    /*** IMAGEID **/ 
     if(command.equals("IMAGEID")){
       if(isClient()){
         requestedToUpdateImage = true;   
@@ -136,7 +163,25 @@ class LocalService{
         p.currentImageId = data;
         if(isServer()){
           p.waitingForImage = false;   
-        }             
+        } else{
+          p.currentAction = -1;  
+        }
+      }
+    }
+    
+    /*** ANIMSTATE **/ 
+    else if(command.equals("ANIMSTATE")){
+      Pair p = config.getPairWithIndex(clientIndex);
+      if(p != null){ 
+        p.currentAnimationState = int(data);             
+      }
+    }
+    
+    /*** ACTION **/ 
+    else if(command.equals("ACTION")){
+      Pair p = config.getPairWithIndex(clientIndex);
+      if(p != null){ 
+        p.currentAction = int(data);             
       }
     }
   }

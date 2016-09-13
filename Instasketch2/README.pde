@@ -72,4 +72,16 @@ $ sudo kill PID (first numerical value on table)
 ### Copying to the PI
 scp -rp Instasketch2 pi@instacolour1.local:/home/pi/
 
+## Stopping the screen from going blank 
+https://www.bitpi.co/2015/02/14/prevent-raspberry-pi-from-sleeping/
+
+
+sudo nano /etc/lightdm/lightdm.conf
+
+In that file, look for:
+[SeatDefault]
+
+and insert this line:
+xserver-command=X -s 0 dpms
+
 **/

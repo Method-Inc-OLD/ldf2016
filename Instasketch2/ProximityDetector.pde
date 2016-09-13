@@ -15,15 +15,6 @@ enum ProximityRange{
   }
 }
 
-/** factory method **/ 
-ProximityDetector createProximityDetector(){
-  ProximityDetector pd;
-   //pd = new MockProximityDetector();
-  pd = new UltrasonicProximityDetector();
-  
-  return pd; 
-}
-
 class ProximityDetector{
   
   final int QUEUE_SIZE = 1;  
@@ -130,7 +121,13 @@ class MockProximityDetector extends ProximityDetector{
   
   public MockProximityDetector(){
     super(); 
-    updateDistance(150); 
+    updateDistance(300); 
+  }
+  
+  void update(){
+    super.update(); 
+    
+    updateDistance(getDistance());
   }
   
   boolean onKeyDown(int keyCode){    
