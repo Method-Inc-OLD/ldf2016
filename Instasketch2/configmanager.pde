@@ -34,6 +34,9 @@ public class ConfigManager{
   /** how many times the range state has to be different than the current state before being updated (when transitioning up i.e. far -> close ) **/
   public int proximityRangeDownChangeThreshold = 5;
   
+  public boolean showFrameRate = true; 
+  public boolean showDistance = true;
+  
   public float lastServerPing =  0;
   public float lastRegisterRequest =  0;
   
@@ -109,7 +112,10 @@ public class ConfigManager{
     if(!responseJSON.isNull("pairs")){
       ArrayList newPairs = new ArrayList();
       
-      JSONArray pairsArray = responseJSON.getJSONArray("pairs"); 
+      JSONArray pairsArray = responseJSON.getJSONArray("pairs");
+      
+      println("pairsArray size = " + pairsArray.size());
+      
       for(int i=0; i<pairsArray.size(); i++){
         JSONObject pairJSON = pairsArray.getJSONObject(i);
         int pairPIIndex = pairJSON.getInt("pi_index");
@@ -118,7 +124,7 @@ public class ConfigManager{
         if(pairPIIndex == piIndex)
           continue; 
           
-        // is master?
+        // is master? we only want to find the master so we can connect to it.
         if(pairPIIndex != 0)
           continue; 
         
@@ -130,7 +136,29 @@ public class ConfigManager{
       }
       
       syncPairs(newPairs);
-    }        
+    }
+    
+    if(!responseJSON.isNull("config")){
+      println("parsing config params");
+      
+      JSONObject config = responseJSON.getJSONObject("config");
+      
+      imageUpdateFrequency = config.getInt("image_update_frequency");
+      elapsedStateIdleTimeBeforeImageUpdate = config.getInt("elapsed_state_idle_time_before_image_update");
+      offscreenBufferMaxWidth = config.getInt("offscreen_buffer_max_width"); 
+      levelsOfDetail = config.getInt("levels_of_detail"); 
+      resolutionX = config.getInt("resolution_x"); 
+      resolutionY = config.getInt("resolution_y");
+      pingFrequency = config.getInt("ping_frequency");
+      registerFrequency = config.getInt("register_frequency");
+      distanceMedium = config.getFloat("distance_medium");
+      distanceClose = config.getInt("distance_close");
+      proximityRangeUpChangeThreshold = config.getInt("proximity_range_up_change_threshold");
+      proximityRangeDownChangeThreshold = config.getInt("proximity_range_down_change_threshold");
+           
+      showFrameRate = config.getInt("show_rate_rate") == 1;
+      showDistance = config.getInt("show_distance") == 1;
+    }
   }
   
   public void ping(){
@@ -168,32 +196,16 @@ public class ConfigManager{
   }
   
   void initFromFile(){
-    //try{
-    //  JSONObject json = loadJSONObject("/home/pi/instacolour.json");
-    //  if(json != null){
-    //    piIndex = json.getInt("pi_index");
-    //    name = json.getString("name");
-    //  }
-    //} catch(Exception e){}
-    
-    JSONObject json = loadJSONObject("data/config.json");
-    if(piIndex == -1){
-      piIndex = json.getInt("pi_index");
-      name = json.getString("name");
-    }
-    
-    imageUpdateFrequency = json.getInt("image_update_frequency");
-    elapsedStateIdleTimeBeforeImageUpdate = json.getInt("elapsed_state_idle_time_before_image_update");
-    offscreenBufferMaxWidth = json.getInt("offscreen_buffer_max_width"); 
-    levelsOfDetail = json.getInt("levels_of_detail"); 
-    resolutionX = json.getInt("resolution_x"); 
-    resolutionY = json.getInt("resolution_y");
-    pingFrequency = json.getInt("ping_frequency");
-    registerFrequency = json.getInt("register_frequency");
-    distanceMedium = json.getFloat("distance_medium");
-    distanceClose = json.getInt("distance_close");
-    proximityRangeUpChangeThreshold = json.getInt("proximity_range_up_change_threshold");
-    proximityRangeDownChangeThreshold = json.getInt("proximity_range_down_change_threshold");
+    try{
+      JSONObject json = loadJSONObject("/home/pi/instacolour_config.json");
+      if(json != null){
+        piIndex = json.getInt("pi_index");
+        name = json.getString("name");
+      }
+    } catch(Exception e){
+      piIndex = 0;
+      name = "fallback_instacolour0";  
+    }        
   }
   
   void initIPAddress(){

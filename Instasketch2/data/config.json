@@ -1,16 +1,4 @@
 {
 	"pi_index": 0, 
-	"name": "instacolour0", 	
-	"image_update_frequency": 30000,
-	"elapsed_state_idle_time_before_image_update": 30000, 
-	"offscreen_buffer_max_width": 400, 
-	"levels_of_detail": 6, 
-	"resolution_x": 36, 
-	"resolution_y": 24, 
-	"ping_frequency": 1200000, 
-	"register_frequency": 2700000, 
-	"distance_medium": 210, 
-	"distance_close": 120, 
-	"proximity_range_up_change_threshold": 10, 
-	"proximity_range_down_change_threshold": 5 
+	"name": "instacolour0"	
 }

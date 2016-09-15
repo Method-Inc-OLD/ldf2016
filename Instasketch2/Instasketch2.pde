@@ -81,8 +81,8 @@ void asyncInitConfigManager(){
 }
 
 void initProximityDetector(){  
-  //proximityDetector = new MockProximityDetector();
-  proximityDetector = new UltrasonicProximityDetector();  
+  proximityDetector = new MockProximityDetector();
+  //proximityDetector = new UltrasonicProximityDetector();  
 }
 
 void initFontsAndTextOverlay(){
@@ -137,7 +137,7 @@ void draw(){
      
   animationController.draw(offscreenBuffer, et);
      
-  if(SHOW_FRAME_RATE){
+  if(configManager.showFrameRate){
     offscreenBuffer.textAlign(LEFT, TOP);
     offscreenBuffer.fill(255, 255, 255, 255);
     offscreenBuffer.noStroke(); 
@@ -145,7 +145,7 @@ void draw(){
     offscreenBuffer.text("FPS: " + frameRate, 20, 20);        
   }
   
-  if(SHOW_DISTANCE){
+  if(configManager.showDistance){
     offscreenBuffer.textAlign(LEFT, TOP);
     offscreenBuffer.fill(255, 255, 255, 255);
     offscreenBuffer.noStroke(); 
