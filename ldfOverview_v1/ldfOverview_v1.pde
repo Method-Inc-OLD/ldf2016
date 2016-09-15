@@ -5,6 +5,7 @@ int farLevels = 6;
 boolean fromImage = false;
 float transitionSpeed = 0.01;
 
+boolean proximitySensorRunning = false; 
 
 Service service;
 Generator generator;
@@ -25,8 +26,24 @@ void setup(){
   
   service = new Service( generator );
   
+  startPollDistanceThread(); 
 }
 
+void startPollDistanceThread(){
+  proximitySensorRunning = true; 
+  thread("updateProximityDetector");
+}
+
+void updateProximityDetector(){
+  while(proximitySensorRunning){
+    int start = millis();     
+    sensor.update();
+    int et = millis() - start; 
+    if(et < 500){
+      delay(500-et);     
+    }      
+  }
+}
 
 void draw(){
   
