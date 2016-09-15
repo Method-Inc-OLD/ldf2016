@@ -1,6 +1,6 @@
 {
-	"pi_index": 1, 
-	"name": "instacolour1", 	
+	"pi_index": 0, 
+	"name": "instacolour0", 	
 	"image_update_frequency": 30000,
 	"elapsed_state_idle_time_before_image_update": 30000, 
 	"offscreen_buffer_max_width": 400, 

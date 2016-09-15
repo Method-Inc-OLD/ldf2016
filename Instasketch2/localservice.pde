@@ -59,7 +59,7 @@ class LocalService{
     }
     
     if(config.getMaster() == null){
-      println("config.getMaster() == null"); 
+      //println("config.getMaster() == null"); 
       return; 
     }
     
@@ -90,11 +90,15 @@ class LocalService{
   
   public boolean updatePairsOfNewAnimationState(int state){
     if(server != null && isConnected()){      
-      println("SERVER: updatePairsOfNewImageId: writing " + config.piIndex + ":ANIMSTATE:" + state + "\n");      
-      server.write(config.piIndex + ":ANIMSTATE:" + state + "\n");  
+      println("SERVER: updatePairsOfNewImageId: writing " + config.piIndex + ":ANIMSTATE:" + state + "\n");
+      try{
+        server.write(config.piIndex + ":ANIMSTATE:" + state + "\n");
+      } catch(Exception e){ server = null; } 
     } else if(client != null && isConnected()){
-      println("CLIENT: updatePairsOfNewImageId: writing " + config.piIndex + ":ANIMSTATE:" + state + "\n");      
-      client.write(config.piIndex + ":ANIMSTATE:" + state + "\n");
+      println("CLIENT: updatePairsOfNewImageId: writing " + config.piIndex + ":ANIMSTATE:" + state + "\n");
+      try{
+        client.write(config.piIndex + ":ANIMSTATE:" + state + "\n");
+      } catch(Exception e){ client = null; } 
     }        
     
     return true; 
@@ -102,17 +106,27 @@ class LocalService{
   
   public boolean updatePairsOfAction(int action){
     if(server != null && isConnected()){      
-      println("SERVER: updatePairsOfNewImageId: writing " + config.piIndex + ":ACTION:" + action + "\n");      
-      server.write(config.piIndex + ":ACTION:" + action + "\n");  
+      println("SERVER: updatePairsOfNewImageId: writing " + config.piIndex + ":ACTION:" + action + "\n");
+      try{
+        server.write(config.piIndex + ":ACTION:" + action + "\n");
+      } catch(Exception e){ server = null; } 
     } else if(client != null && isConnected()){
-      println("CLIENT: updatePairsOfNewImageId: writing " + config.piIndex + ":ACTION:" + action + "\n");      
-      client.write(config.piIndex + ":ACTION:" + action + "\n");
+      println("CLIENT: updatePairsOfNewImageId: writing " + config.piIndex + ":ACTION:" + action + "\n");
+      try{
+        client.write(config.piIndex + ":ACTION:" + action + "\n");
+      } catch(Exception e){ client = null; } 
     }        
     
     return true; 
   }
   
   public void update(float et){
+    try{
+      _update(et);   
+    } catch(Exception e){}
+  }
+  
+  private void _update(float et){
     if(!isConnected()){
       init(); 
       return; 

@@ -68,7 +68,7 @@ void setup() {
   
   offscreenBuffer = createGraphics(width, height, P2D);  
   
-  lastUpdateTimestamp = millis();       
+  lastUpdateTimestamp = millis();     
 } 
 
 void initConfigManager(){
@@ -81,8 +81,8 @@ void asyncInitConfigManager(){
 }
 
 void initProximityDetector(){  
-  //proximityDetector = new MockProximityDetector();
-  proximityDetector = new UltrasonicProximityDetector();  
+  proximityDetector = new MockProximityDetector();
+  //proximityDetector = new UltrasonicProximityDetector();  
 }
 
 void initFontsAndTextOverlay(){
@@ -113,7 +113,8 @@ void draw(){
   
   if(configManager.isFinishedInitilising()){
     pairCommunicationService = new LocalService(configManager);
-    requestNextImage();    
+    requestNextImage();   
+    startPollDistanceThread();
   }
   
   if(pairCommunicationService != null){
@@ -179,10 +180,6 @@ void draw(){
     requestNextImage();     
   } 
   
-  if(isReadyToPollDistance()){
-    pollDistance();     
-  }
-  
   thread("updateConfigManager"); 
 }
 
@@ -239,14 +236,27 @@ boolean isReadyForNewImage(){
   return inValidState && !alreadyHasNewImage && (enoughTimeElapsed || requestedToUpdateImage) && enoughTimeElapsedSinceStateChange; 
 }
 
-boolean isReadyToPollDistance(){
-  return proximityDetector.isReady();  
+void startPollDistanceThread(){
+  thread("updateProximityDetector");    
 }
 
-void pollDistance(){
-  thread("updateProximityDetector"); 
+void updateProximityDetector(){  
   
-  ProximityRange currentRange = proximityDetector.getCurrentRange(); 
+  while(true){  
+    int start = millis();     
+    proximityDetector.update();
+    int et = millis() - start; 
+    if(et < 500){
+      delay(500-et);     
+    }
+  }      
+}
+
+void onProximityChanged(ProximityRange currentRange){  
+  if(animationController == null){
+    return;   
+  }
+  
   boolean inProximity = currentRange != ProximityRange.Far && currentRange != ProximityRange.Undefined;
   if(inProximity && (animationState == AnimationState.Idle || animationState == AnimationState.TransitionOut)){
     setAnimationState(AnimationState.TransitionIn);   
@@ -254,11 +264,7 @@ void pollDistance(){
     setAnimationState(AnimationState.TransitionOut);
   }
   
-  animationController.unlockLastFrame = currentRange == ProximityRange.Close;
-}
-
-void updateProximityDetector(){
-  proximityDetector.update();     
+  animationController.unlockLastFrame = currentRange == ProximityRange.Close;  
 }
 
 void keyPressed() {
@@ -268,9 +274,7 @@ void keyPressed() {
   
   if(keyCode == 78){ // n
     requestNextImage(); 
-  } else if(keyCode == 68){ // d
-    pollDistance(); 
-  }
+  } 
 }
 
 void onImageFetchComplete(LDFServiceAPI caller){ 

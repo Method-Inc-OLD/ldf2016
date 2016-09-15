@@ -72,6 +72,9 @@ $ sudo kill PID (first numerical value on table)
 ### Copying to the PI
 scp -rp Instasketch2 pi@instacolour1.local:/home/pi/
 
+#### Copying .json file to the PI 
+scp instacolour.json pi@instacolour1.local:/home/pi/
+
 ## Stopping the screen from going blank 
 https://www.bitpi.co/2015/02/14/prevent-raspberry-pi-from-sleeping/
 
@@ -83,5 +86,18 @@ In that file, look for:
 
 and insert this line:
 xserver-command=X -s 0 dpms
+
+## Install Processing 
+https://www.raspberrypi.org/blog/now-available-for-download-processing/
+$ curl https://processing.org/download/install-arm.sh | sudo sh
+
+## Backing up the PI and recovering (aka cloning)  
+https://thepihut.com/blogs/raspberry-pi-tutorials/17789160-backing-up-and-restoring-your-raspberry-pis-sd-card
+https://computers.tutsplus.com/articles/how-to-clone-raspberry-pi-sd-cards-using-the-command-line-in-os-x--mac-59911
+
+## Multiple networks 
+http://raspberrypi.stackexchange.com/questions/11631/how-to-setup-multiple-wifi-networks
+https://www.mikestreety.co.uk/blog/use-a-raspberry-pi-with-multiple-wifi-networks
+http://www.geeked.info/raspberry-pi-add-multiple-wifi-access-points/
 
 **/

@@ -79,6 +79,10 @@ class ProximityDetector{
       this.previousRange = this.currentRange; 
       this.currentRange = range;
     }        
+    
+    if(hasChanged()){
+      onProximityChanged(this.currentRange);   
+    }
   }
   
   public ProximityRange getCurrentRange(){
@@ -108,6 +112,10 @@ class ProximityDetector{
     // update proximity range 
     ProximityRange newRange = distanceToProximityRange(this.getDistance()); 
     setCurrentRange(newRange); 
+  }
+  
+  public boolean hasChanged(){
+    return previousRange != currentRange;   
   }
   
   public boolean isReady(){

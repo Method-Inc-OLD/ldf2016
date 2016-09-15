@@ -82,6 +82,7 @@ public class ConfigManager{
     
     this.stateChangedCounter += stateChangedCounter;
     
+    // only the master registers 
     if((millis() - lastRegisterRequest) > registerFrequency){
         register();   
       }
@@ -93,7 +94,7 @@ public class ConfigManager{
   
   public void register(){
     lastRegisterRequest = millis(); 
-    
+        
     final String url = "http://instacolour.herokuapp.com/api/registerpi?pi_index=" + piIndex + "&hostaddress=" + hostAddress;
     
     println("registering " + url); 
@@ -104,6 +105,7 @@ public class ConfigManager{
       return; 
     }        
     
+    // only add the master (central coordiantor) 
     if(!responseJSON.isNull("pairs")){
       ArrayList newPairs = new ArrayList();
       
@@ -111,8 +113,13 @@ public class ConfigManager{
       for(int i=0; i<pairsArray.size(); i++){
         JSONObject pairJSON = pairsArray.getJSONObject(i);
         int pairPIIndex = pairJSON.getInt("pi_index");
-        
+    
+        // is self? 
         if(pairPIIndex == piIndex)
+          continue; 
+          
+        // is master?
+        if(pairPIIndex != 0)
           continue; 
         
         String pairHostAddress = pairJSON.getString("hostaddress");
@@ -161,9 +168,19 @@ public class ConfigManager{
   }
   
   void initFromFile(){
+    //try{
+    //  JSONObject json = loadJSONObject("/home/pi/instacolour.json");
+    //  if(json != null){
+    //    piIndex = json.getInt("pi_index");
+    //    name = json.getString("name");
+    //  }
+    //} catch(Exception e){}
+    
     JSONObject json = loadJSONObject("data/config.json");
-    piIndex = json.getInt("pi_index");
-    name = json.getString("name");
+    if(piIndex == -1){
+      piIndex = json.getInt("pi_index");
+      name = json.getString("name");
+    }
     
     imageUpdateFrequency = json.getInt("image_update_frequency");
     elapsedStateIdleTimeBeforeImageUpdate = json.getInt("elapsed_state_idle_time_before_image_update");
@@ -237,6 +254,8 @@ public class ConfigManager{
       }
     }
     
+    // didn't find the pair so create a new one 
+    println("Couldn't find pair with index " + index + ", creating a new instance"); 
     Pair newPair = new Pair(index); 
     pairs.add(newPair); 
     
