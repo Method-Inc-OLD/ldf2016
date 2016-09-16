@@ -32,9 +32,7 @@ class UltrasonicProximityDetector extends ProximityDetector {
       return;   
     }
     
-    initilised = true;
-    
-    update();            
+    initilised = true;         
   }
 
   private void initSensor() {
