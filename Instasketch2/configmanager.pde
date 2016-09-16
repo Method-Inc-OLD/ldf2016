@@ -307,6 +307,7 @@ class Pair{
   public String hostAddress = "";  
   
   public String currentImageId = "";
+  public int currentImageNumber = 0; 
   public boolean waitingForImage = false;
   public int currentAnimationState = -1;
   

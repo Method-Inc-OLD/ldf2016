@@ -80,8 +80,8 @@ void asyncInitConfigManager(){
 }
 
 void initProximityDetector(){  
-  //proximityDetector = new MockProximityDetector();  
-  proximityDetector = new UltrasonicProximityDetector();
+  proximityDetector = new MockProximityDetector();  
+  //proximityDetector = new UltrasonicProximityDetector();
   
   thread("_initProximityDetector"); 
 }
@@ -132,7 +132,7 @@ void onPreDraw(float et){
     pairCommunicationService = new LocalService(configManager);    
     
     requestNextImage();
-    
+    return; 
   } 
   
   if(!configManager.isInitilised()){
@@ -192,7 +192,10 @@ void onPostDraw(float et){
     return;     
   }
   
-  if(readyToMoveToNextImage){
+  if(isReadyForNewImage()){        
+    requestNextImage();     
+  } 
+  else if(readyToMoveToNextImage){
     if(isReadyToMoveToNextImage()){      
       moveToNextImage();            
     } 
@@ -205,11 +208,7 @@ void onPostDraw(float et){
       readyToTransitionNewColour = false; 
       setAnimationState(AnimationState.TransitionOut); 
     }
-  }    
-  
-  if(isReadyForNewImage()){        
-    requestNextImage();     
-  } 
+  }
   
   if(configManager.isInitilised()){
     thread("updateConfigManager"); 
@@ -218,6 +217,15 @@ void onPostDraw(float et){
 
 void updateConfigManager(){
   configManager.update(stateChangedCounter);
+}
+
+boolean isReadyForNewImage(){ 
+  boolean inValidState = !ldfService.isFetchingImage() && !readyToTransitionNewColour && animationState == AnimationState.TransitionOut && !animationController.isAnimating();
+  boolean alreadyHasNewImage = !configManager.currentImageId.equals(ldfService.getImageId()); 
+  boolean enoughTimeElapsed = (millis() - imageUpdatedTimestamp) >= configManager.imageUpdateFrequency && configManager.isMaster();
+  boolean enoughTimeElapsedSinceStateChange = millis() - lastStateTimestamp >= configManager.elapsedStateIdleTimeBeforeImageUpdate;  
+  
+  return inValidState && !alreadyHasNewImage && (enoughTimeElapsed || requestedToUpdateImage) && enoughTimeElapsedSinceStateChange; 
 }
 
 boolean isReadyToMoveToNextImage(){
@@ -258,15 +266,6 @@ boolean isReadyToMoveToNextImage(){
     
     return animationState == AnimationState.TransitionOut;
   }
-}
-
-boolean isReadyForNewImage(){ 
-  boolean inValidState = !ldfService.isFetchingImage() && !readyToTransitionNewColour && animationState == AnimationState.TransitionOut && !animationController.isAnimating();
-  boolean alreadyHasNewImage = !configManager.currentImageId.equals(ldfService.getImageId()); 
-  boolean enoughTimeElapsed = (millis() - imageUpdatedTimestamp) >= configManager.imageUpdateFrequency && configManager.isMaster();
-  boolean enoughTimeElapsedSinceStateChange = millis() - lastStateTimestamp >= configManager.elapsedStateIdleTimeBeforeImageUpdate;  
-  
-  return inValidState && !alreadyHasNewImage && (enoughTimeElapsed || requestedToUpdateImage) && enoughTimeElapsedSinceStateChange; 
 }
 
 void startPollDistanceThread(){
@@ -317,7 +316,7 @@ void onImageFetchComplete(LDFServiceAPI caller){
   readyToMoveToNextImage = true; 
   
   if(pairCommunicationService != null){
-    pairCommunicationService.updatePairsOfNewImageId(ldfService.getImageId());   
+    pairCommunicationService.updatePairsOfNewImageId(ldfService.getImageId(), ldfService.imageCounter);   
   }
 }
 
@@ -378,36 +377,36 @@ void setAnimationState(AnimationState state){
   }
 }
 
-void setPixCollectionAnimationForNewColourTransition(){
-  if(pixCollection == null){
-    return;   
-  }
+//void setPixCollectionAnimationForNewColourTransition(){
+//  if(pixCollection == null){
+//    return;   
+//  }
   
-  for(int y=0; y<pixCollection.sourceYRes; y++){
-    for(int x=0; x<pixCollection.sourceXRes; x++){
-      Pix pix = pixCollection.pixies[y][x];
+//  for(int y=0; y<pixCollection.sourceYRes; y++){
+//    for(int x=0; x<pixCollection.sourceXRes; x++){
+//      Pix pix = pixCollection.pixies[y][x];
       
-      // set source colour and animation time for LEVEL 0
-      float index = y * pixCollection.sourceXRes + x;   
-      float animTimeForLevel0 = 10.0f + index * 1.5f;
-      pix.setAnimTime(animTimeForLevel0, 0);
-    }
-  } 
-}
+//      // set source colour and animation time for LEVEL 0
+//      float index = y * pixCollection.sourceXRes + x;   
+//      float animTimeForLevel0 = 10.0f + index * 1.5f;
+//      pix.setAnimTime(animTimeForLevel0, 0);
+//    }
+//  } 
+//}
 
-void resetPixCollectionAnimation(){
-  if(pixCollection == null){
-    return;   
-  }
+//void resetPixCollectionAnimation(){
+//  if(pixCollection == null){
+//    return;   
+//  }
   
-  for(int y=0; y<pixCollection.sourceYRes; y++){
-    for(int x=0; x<pixCollection.sourceXRes; x++){
-      Pix pix = pixCollection.pixies[y][x];
+//  for(int y=0; y<pixCollection.sourceYRes; y++){
+//    for(int x=0; x<pixCollection.sourceXRes; x++){
+//      Pix pix = pixCollection.pixies[y][x];
       
-      // set source colour and animation time for LEVEL 0
-      float index = y * pixCollection.sourceXRes + x;
-      float animTimeForLevel0 = 500.0f;                  
-      pix.setAnimTime(animTimeForLevel0, 0);
-    }
-  } 
-}
+//      // set source colour and animation time for LEVEL 0
+//      float index = y * pixCollection.sourceXRes + x;
+//      float animTimeForLevel0 = 500.0f;                  
+//      pix.setAnimTime(animTimeForLevel0, 0);
+//    }
+//  } 
+//}

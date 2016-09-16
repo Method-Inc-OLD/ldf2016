@@ -98,7 +98,7 @@ class LocalService{
     }
   }
   
-  public boolean updatePairsOfNewImageId(String imageId){
+  public boolean updatePairsOfNewImageId(String imageId, int imageNumber){
     if(imageId == null) return false; 
     
     if(server != null && isConnected()){
@@ -109,10 +109,10 @@ class LocalService{
           clientPair.waitingForImage = true; 
       }
       
-      println("SERVER: updatePairsOfNewImageId: writing " + config.piIndex + ":IMAGEID:" + imageId + "\n");      
+      println("SERVER: updatePairsOfNewImageId: writing " + config.piIndex + ":IMAGEID:" + imageId + ":IMAGENUM:" + imageNumber + "\n");      
       server.write(config.piIndex + ":IMAGEID:" + imageId + "\n");  
     } else if(client != null && isConnected()){
-      println("CLIENT: updatePairsOfNewImageId: writing " + config.piIndex + ":IMAGEID:" + imageId + "\n");      
+      println("CLIENT: updatePairsOfNewImageId: writing " + config.piIndex + ":IMAGEID:" + imageId + ":IMAGENUM:" + imageNumber + "\n");      
       client.write(config.piIndex + ":IMAGEID:" + imageId + "\n");
     }        
     
@@ -207,14 +207,17 @@ class LocalService{
     String data = lineComponents[2];
     
     /*** IMAGEID **/ 
-    if(command.equals("IMAGEID")){
-      if(isClient()){
+    if(command.equals("IMAGEID")){            
+      int imageNumber = int(lineComponents[4]);
+      
+      if(isClient() && imageNumber > 1){
         requestedToUpdateImage = true;   
       }
       
       Pair p = config.getPairWithIndex(clientIndex);
       if(p != null){ 
         p.currentImageId = data;
+        p.currentImageNumber = imageNumber; 
         if(isServer()){
           p.waitingForImage = false;   
         } else{

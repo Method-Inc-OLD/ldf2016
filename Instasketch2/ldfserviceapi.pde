@@ -10,6 +10,8 @@ void asyncFetchNextImage(){
 
 class LDFServiceAPI{
   
+  public int imageCounter = 0; 
+  
   boolean logging = true; 
    
   boolean fetchingImage = false; 
@@ -102,9 +104,12 @@ class LDFServiceAPI{
     sampleImage = colourisedImage.copy(); 
     sampleImage.resize(configManager.resolutionX, configManager.resolutionY);        
     
-    lastImageTimestamp = millis();       
+    lastImageTimestamp = millis();
+    imageCounter += 1;
+    
     onImageFetchComplete(this);
-    setFetchingImage(false);
+    
+    setFetchingImage(false);        
   } 
   
   String getColourName(){
