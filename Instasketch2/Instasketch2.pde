@@ -83,8 +83,8 @@ void asyncInitConfigManager(){
 }
 
 void initProximityDetector(){  
-  //proximityDetector = new MockProximityDetector();
-  proximityDetector = new UltrasonicProximityDetector();  
+  proximityDetector = new MockProximityDetector();
+  //proximityDetector = new UltrasonicProximityDetector();  
 }
 
 void initFontsAndTextOverlay(){
@@ -183,7 +183,9 @@ void draw(){
     requestNextImage();     
   } 
   
-  thread("updateConfigManager"); 
+  if(configManager.isInitilised()){
+    thread("updateConfigManager"); 
+  }
 }
 
 void updateConfigManager(){
