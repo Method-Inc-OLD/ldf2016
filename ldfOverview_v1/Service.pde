@@ -1,6 +1,8 @@
 
 class Service{
  
+  
+  
   Generator generator;
   
   public boolean startedLoading = false;
@@ -12,6 +14,8 @@ class Service{
    println("Setting up service");
    
    generator = gen;
+   
+   latestClrs = null;
    
    latestClrs = retreiveColours();
    if ( latestClrs != null ){
@@ -27,18 +31,51 @@ class Service{
      // Level 0 (clost) - all colours
      ArrayList<Colour> allColours = new ArrayList();
      
-     JSONObject allColoursJson = loadJSONObject("http://instacolour.herokuapp.com/api/ldfcolours");
-     JSONObject mediumColoursJson;
-     if( fromImage ){
-       mediumColoursJson = loadJSONObject("http://instacolour.herokuapp.com/api/ldfpalette?from_image=yes&colours=" + mediumLevels);
+     JSONObject allColoursJson = null;
+     JSONObject mediumColoursJson = null;
+     JSONObject farColoursJson = null;
+     
+     if ( loadLocal ){
+       
+       allColoursJson = loadJSONObject("coloursnear.json");
+       mediumColoursJson = loadJSONObject("coloursmedium.json");
+       farColoursJson = loadJSONObject("coloursfar.json");
+       
      } else {
-       mediumColoursJson = loadJSONObject("http://instacolour.herokuapp.com/api/ldfpalette?colours=" + mediumLevels);
-     }
-     JSONObject farColoursJson;
-     if ( fromImage ){
-       farColoursJson = loadJSONObject("http://instacolour.herokuapp.com/api/ldfpalette?colours=" + farLevels);
-     } else {
-       farColoursJson = loadJSONObject("http://instacolour.herokuapp.com/api/ldfpalette?from_image=yes&colours=" + farLevels);
+       try {
+         allColoursJson = loadJSONObject("http://instacolour.herokuapp.com/api/ldfcolours");
+       } catch (Exception e){
+         println("network issue");
+       }
+       
+       
+       if( fromImage ){
+         try{
+           mediumColoursJson = loadJSONObject("http://instacolour.herokuapp.com/api/ldfpalette?from_image=yes&colours=" + mediumLevels);
+         } catch (Exception e){
+           println("network issue"); 
+         }       
+       } else {
+         try{
+           mediumColoursJson = loadJSONObject("http://instacolour.herokuapp.com/api/ldfpalette?colours=" + mediumLevels);
+         } catch (Exception e){
+           println("network issue"); 
+         }
+       }
+       
+       if ( fromImage ){
+         try{
+           farColoursJson = loadJSONObject("http://instacolour.herokuapp.com/api/ldfpalette?colours=" + farLevels);
+         } catch( Exception e ){
+           println("network issue"); 
+         }
+       } else {
+         try{
+           farColoursJson = loadJSONObject("http://instacolour.herokuapp.com/api/ldfpalette?from_image=yes&colours=" + farLevels);
+         } catch( Exception e ){
+           println("network issue"); 
+         }
+       }
      }
      
      if( allColoursJson != null && mediumColoursJson != null && farColoursJson != null ){
@@ -54,6 +91,7 @@ class Service{
           
           float[] hsls = new float[3];
           hsls[0] = hsl.getFloat(0);
+          //hsls[0] = hsl.getFloat(0) + random(180);
           hsls[1] = hsl.getFloat(1);
           hsls[2] = hsl.getFloat(2);
           
@@ -78,7 +116,8 @@ class Service{
          float population = colour.getFloat("population");
          
          float[] hsls = new float[3];
-         hsls[0] = hsl.getFloat(0);      
+         //hsls[0] = hsl.getFloat(0) + random(180);
+         hsls[0] = hsl.getFloat(0);
          hsls[1] = hsl.getFloat(1);
          hsls[2] = hsl.getFloat(2);
           
@@ -107,7 +146,8 @@ class Service{
          float population = colour.getFloat("population");
          
          float[] hsls = new float[3];
-         hsls[0] = hsl.getFloat(0);      
+         //hsls[0] = hsl.getFloat(0) + random(180);
+         hsls[0] = hsl.getFloat(0);
          hsls[1] = hsl.getFloat(1);
          hsls[2] = hsl.getFloat(2);
           

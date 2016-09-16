@@ -10,6 +10,9 @@ class Animator{
  PGraphics newMedium;
  PGraphics newFar;
  
+ boolean shouldChangeColours = false;
+ float changeInterp = 0;
+ 
  Sensor sensor;
  
  int state = -1;
@@ -26,9 +29,19 @@ class Animator{
  void updateGraphics( PGraphics _near, PGraphics _medium, PGraphics _far ){
    println( "updating graphics" );
    
-   near = _near;
-   medium = _medium;
-   far = _far;
+   newNear = _near;
+   newMedium = _medium;
+   newFar = _far;
+   
+   if ( near == null || medium == null || far == null ){
+     near = _near;
+     medium = _medium;
+     far = _far;     
+   } else {
+     shouldChangeColours = true; 
+     changeInterp = 0;
+   }
+
    
  }
  
@@ -37,8 +50,6 @@ class Animator{
    
    int targetState = sensor.getState(); 
    state = targetState;
-   
-   
    
    float distanceToTarget = abs( targetState - interpolator );
    if ( distanceToTarget > 0.02 ){
@@ -89,6 +100,44 @@ class Animator{
    } else if ( interpolator >= 2 ){
      tint( 255, 255 );
      image( far, 0, 0 );
+   }
+   
+   
+   
+   if ( shouldChangeColours ){
+    if ( changeInterp < 1 ){
+      // changing
+      
+      println("interpolating");
+      
+      if( interpolator < 0 ){
+        // nothing
+        tint( 255, changeInterp*255 );
+        image( newNear, 0, 0 );
+      } else if ( interpolator >= 0 && interpolator < 1 ){
+        tint( 255, changeInterp*255 );
+        image( newNear, 0, 0 );
+      } else if( interpolator >= 1 && interpolator < 2 ){
+        tint( 255, changeInterp*255 );
+        image( newMedium, 0, 0 );
+      } else if ( interpolator >= 2 ){
+        tint( 255, changeInterp*255 );
+        image( newFar, 0, 0 );
+      }
+      
+      changeInterp += transitionSpeed;
+      
+    } else {
+      // finished
+      changeInterp = 0;
+      shouldChangeColours = false;
+      println("changed");
+      
+      near = newNear;
+      far = newFar;
+      medium = newMedium;
+      
+    }
    }
    
  }

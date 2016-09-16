@@ -5,6 +5,7 @@ int farLevels = 6;
 boolean fromImage = false;
 float transitionSpeed = 0.01;
 
+boolean loadLocal = false;
 
 Service service;
 Generator generator;
