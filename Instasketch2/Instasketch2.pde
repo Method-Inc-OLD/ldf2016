@@ -57,6 +57,8 @@ void setup() {
   
   initConfigManager();     
   
+  initProximityDetector();
+  
   iniSourceDimensions();    
   
   initLDFService(); 
@@ -118,8 +120,7 @@ void draw(){
   lastUpdateTimestamp = millis(); 
   
   if(configManager.isFinishedInitilising()){
-    println("finished initlising");
-    initProximityDetector();
+    println("finished initlising");    
     startPollDistanceThread();
     
     pairCommunicationService = new LocalService(configManager);    
