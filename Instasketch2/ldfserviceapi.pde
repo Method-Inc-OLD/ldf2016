@@ -1,10 +1,16 @@
 
-// HACK 
+
+boolean isFetchingImage(){
+  return ldfService == null || ldfService.isFetchingImage(); 
+}
+ 
 void asyncFetchNextImage(){
   ldfService.fetchNextImage(); 
 }
 
 class LDFServiceAPI{
+  
+  public int imageCounter = 0; 
   
   boolean logging = true; 
    
@@ -99,8 +105,11 @@ class LDFServiceAPI{
     sampleImage.resize(configManager.resolutionX, configManager.resolutionY);        
     
     lastImageTimestamp = millis();
-    setFetchingImage(false);    
-    onImageFetchComplete(this);                    
+    imageCounter += 1;
+    
+    onImageFetchComplete(this);
+    
+    setFetchingImage(false);        
   } 
   
   String getColourName(){
@@ -166,6 +175,8 @@ class LDFServiceAPI{
       }
     }
     fullColourImage.updatePixels();  
+    
+    println("finished fetchAndSetImage"); 
   }
   
   private void fetchAndSetColoursiedImage(ImageDetails imageDetails){
@@ -207,5 +218,7 @@ class LDFServiceAPI{
       }
     }
     colourisedImage.updatePixels();  
+    
+    println("Finished fetchAndSetColoursiedImage"); 
   }
 }

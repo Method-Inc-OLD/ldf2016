@@ -9,7 +9,7 @@ class LocalService{
   
   public static final int ACTION_UPDATE_IMAGE = 10; 
 
-  private int port = 8080;
+  private int port = 8888;
   
   private ConfigManager config; 
   
@@ -17,10 +17,15 @@ class LocalService{
   
   private Server server; 
   private Client client; 
+  
+  private int retryCounter = 0; 
 
   LocalService(ConfigManager config){
     println("setting up local connection"); 
     this.config = config; 
+    
+    this.port = config.p2pPort; 
+    
     init(); 
   }
   
@@ -40,6 +45,14 @@ class LocalService{
   }
   
   private void initServer(){
+    retryCounter -= 1; 
+    
+    if(retryCounter > 0){
+      return;   
+    }
+    
+    retryCounter = 0; 
+    
     if(server != null){
       if(server.active()){
         server.stop();         
@@ -48,10 +61,22 @@ class LocalService{
     }
     
     println("initServer: " + config.hostAddress);    
-    server = new Server(MainPApplet(), port, config.hostAddress);  // Start a simple server on a port=        
+    try{
+      server = new Server(MainPApplet(), port, config.hostAddress);  // Start a simple server on a port=
+    } catch(Exception e){
+      retryCounter = 10;
+    }
   }
   
   private void initClient(){
+    retryCounter -= 1; 
+    
+    if(retryCounter > 0){
+      return;   
+    }
+    
+    retryCounter = 0; 
+    
     if(client != null){
       if(client.active()){
         client.stop();         
@@ -65,10 +90,15 @@ class LocalService{
     }
     
     println("initClient: " + config.getMaster().hostAddress);
-    client = new Client(MainPApplet(), config.getMaster().hostAddress, port);        
+    try{
+      client = new Client(MainPApplet(), config.getMaster().hostAddress, port);
+    } catch(Exception e){
+      client = null; 
+      retryCounter = 500;   
+    }
   }
   
-  public boolean updatePairsOfNewImageId(String imageId){
+  public boolean updatePairsOfNewImageId(String imageId, int imageNumber){
     if(imageId == null) return false; 
     
     if(server != null && isConnected()){
@@ -79,10 +109,10 @@ class LocalService{
           clientPair.waitingForImage = true; 
       }
       
-      println("SERVER: updatePairsOfNewImageId: writing " + config.piIndex + ":IMAGEID:" + imageId + "\n");      
+      println("SERVER: updatePairsOfNewImageId: writing " + config.piIndex + ":IMAGEID:" + imageId + ":IMAGENUM:" + imageNumber + "\n");      
       server.write(config.piIndex + ":IMAGEID:" + imageId + "\n");  
     } else if(client != null && isConnected()){
-      println("CLIENT: updatePairsOfNewImageId: writing " + config.piIndex + ":IMAGEID:" + imageId + "\n");      
+      println("CLIENT: updatePairsOfNewImageId: writing " + config.piIndex + ":IMAGEID:" + imageId + ":IMAGENUM:" + imageNumber + "\n");      
       client.write(config.piIndex + ":IMAGEID:" + imageId + "\n");
     }        
     
@@ -91,12 +121,12 @@ class LocalService{
   
   public boolean updatePairsOfNewAnimationState(int state){
     if(server != null && isConnected()){      
-      println("SERVER: updatePairsOfNewImageId: writing " + config.piIndex + ":ANIMSTATE:" + state + "\n");
+      println("SERVER: updatePairsOfNewAnimationState: writing " + config.piIndex + ":ANIMSTATE:" + state + "\n");
       try{
         server.write(config.piIndex + ":ANIMSTATE:" + state + "\n");
       } catch(Exception e){ server = null; } 
     } else if(client != null && isConnected()){
-      println("CLIENT: updatePairsOfNewImageId: writing " + config.piIndex + ":ANIMSTATE:" + state + "\n");
+      println("CLIENT: updatePairsOfNewAnimationState: writing " + config.piIndex + ":ANIMSTATE:" + state + "\n");
       try{
         client.write(config.piIndex + ":ANIMSTATE:" + state + "\n");
       } catch(Exception e){ client = null; } 
@@ -107,12 +137,12 @@ class LocalService{
   
   public boolean updatePairsOfAction(int action){
     if(server != null && isConnected()){      
-      println("SERVER: updatePairsOfNewImageId: writing " + config.piIndex + ":ACTION:" + action + "\n");
+      println("SERVER: updatePairsOfAction: writing " + config.piIndex + ":ACTION:" + action + "\n");
       try{
         server.write(config.piIndex + ":ACTION:" + action + "\n");
       } catch(Exception e){ server = null; } 
     } else if(client != null && isConnected()){
-      println("CLIENT: updatePairsOfNewImageId: writing " + config.piIndex + ":ACTION:" + action + "\n");
+      println("CLIENT: updatePairsOfAction: writing " + config.piIndex + ":ACTION:" + action + "\n");
       try{
         client.write(config.piIndex + ":ACTION:" + action + "\n");
       } catch(Exception e){ client = null; } 
@@ -177,14 +207,17 @@ class LocalService{
     String data = lineComponents[2];
     
     /*** IMAGEID **/ 
-    if(command.equals("IMAGEID")){
-      if(isClient()){
+    if(command.equals("IMAGEID")){            
+      int imageNumber = int(lineComponents[4]);
+      
+      if(isClient() && imageNumber > 1){
         requestedToUpdateImage = true;   
       }
       
       Pair p = config.getPairWithIndex(clientIndex);
       if(p != null){ 
         p.currentImageId = data;
+        p.currentImageNumber = imageNumber; 
         if(isServer()){
           p.waitingForImage = false;   
         } else{

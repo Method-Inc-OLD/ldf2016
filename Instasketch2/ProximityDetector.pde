@@ -32,11 +32,17 @@ class ProximityDetector{
   float lastUpdateTimestamp = 0;
   int updatesPerSecondCounter = 0;
   
-  ProximityRange previousRange = ProximityRange.Undefined; 
-  ProximityRange currentRange = ProximityRange.Undefined;    
+  ProximityRange previousRange = ProximityRange.Far; 
+  ProximityRange currentRange = ProximityRange.Far;  
+  
+  boolean initilised = false; 
   
   ProximityDetector(){
     
+  }
+  
+  void init(){
+    initilised = true;     
   }
   
   public void update(){

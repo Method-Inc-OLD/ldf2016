@@ -50,6 +50,8 @@ public class ConfigManager{
   private String currentImageId = "";
   private int stateChangedCounter = 0;
   
+  private int p2pPort = 8888; 
+  
   public ConfigManager(){
     initFromFile();     
   }
@@ -101,6 +103,10 @@ public class ConfigManager{
   }
   
   public void register(){
+    if(isFetchingImage()){
+      return;   
+    }
+    
     lastRegisterRequest = millis(); 
         
     final String url = "http://instacolour.herokuapp.com/api/registerpi?pi_index=" + piIndex + "&hostaddress=" + hostAddress;
@@ -109,7 +115,7 @@ public class ConfigManager{
     
     JSONObject responseJSON = loadJSONObject(url);
     if(responseJSON == null){
-      // TODO; handle exception 
+      println("Error while registering, response is empty");
       return; 
     }        
     
@@ -163,12 +169,17 @@ public class ConfigManager{
            
       showFrameRate = config.getInt("show_rate_rate") == 1;
       showDistance = config.getInt("show_distance") == 1;
+      
+      p2pPort = config.getInt("p2p_port"); 
     }
     
     println("finished parsing config params");
   }
   
   public void ping(){
+    if(isFetchingImage()){
+      return;   
+    }
      lastServerPing = millis(); 
      
      final String url = "http://instacolour.herokuapp.com/api/piping?pi_index=" + piIndex + "&hostaddress=" + hostAddress + "&image_id=" + currentImageId
@@ -296,6 +307,7 @@ class Pair{
   public String hostAddress = "";  
   
   public String currentImageId = "";
+  public int currentImageNumber = 0; 
   public boolean waitingForImage = false;
   public int currentAnimationState = -1;
   

@@ -22,17 +22,17 @@ boolean requestedToUpdateImage = false;
 AnimationState animationState = AnimationState.Idle; 
 int stateChangedCounter = 0; 
 
-ProximityDetector proximityDetector;
+int readyToMoveToNextImageScore = 0; 
 
-LDFServiceAPI ldfService;
-
-boolean preparingToTransitionNewColour = false; 
+boolean readyToMoveToNextImage = false; 
 boolean readyToTransitionNewColour = false;  
 float readyToTransitionNewColourTimestamp = 0.0f; 
 
-int isReadyToMoveToNextImageScore = 0; 
-
 ConfigManager configManager; 
+
+ProximityDetector proximityDetector;
+
+LDFServiceAPI ldfService;
 
 LocalService pairCommunicationService; 
 
@@ -44,10 +44,8 @@ public static PApplet MainPApplet(){
 
 void setup() { 
     
-  frameRate(FRAME_RATE);  
-  //size(720, 480, P2D);  
+  frameRate(FRAME_RATE);    
   size(720, 480);
-  //fullScreen(P2D);
   
   surface.setResizable(false);
   
@@ -55,7 +53,7 @@ void setup() {
   
   noCursor();    
   
-  initConfigManager(); 
+  initConfigManager();     
   
   initProximityDetector();
   
@@ -67,7 +65,6 @@ void setup() {
   
   initFontsAndTextOverlay();
   
-  //offscreenBuffer = createGraphics(width, height, P2D);  
   offscreenBuffer = createGraphics(width, height);
   
   lastUpdateTimestamp = millis();     
@@ -83,12 +80,18 @@ void asyncInitConfigManager(){
 }
 
 void initProximityDetector(){  
-  //proximityDetector = new MockProximityDetector();
-  proximityDetector = new UltrasonicProximityDetector();  
+  proximityDetector = new MockProximityDetector();  
+  //proximityDetector = new UltrasonicProximityDetector();
+  
+  thread("_initProximityDetector"); 
+}
+
+void _initProximityDetector(){
+  proximityDetector.init();     
 }
 
 void initFontsAndTextOverlay(){
-  font = loadFont("Helvetica-70.vlw");
+  font = loadFont("Jungka-Medium-70.vlw");
   statusFont = loadFont("courier-12.vlw");
   
   textOverlayAnimator = new TextAnimator(font, "");
@@ -113,13 +116,30 @@ void draw(){
   float et = millis() - lastUpdateTimestamp;
   lastUpdateTimestamp = millis(); 
   
+  onPreDraw(et); 
+  
+  onDraw(et);  
+  
+  onPostDraw(et);     
+}
+
+void onPreDraw(float et){
+    
   if(configManager.isFinishedInitilising()){
-    println("finished initlising"); 
-    pairCommunicationService = new LocalService(configManager);
-    requestNextImage();   
+    println("finished initlising");    
     startPollDistanceThread();
+    
+    pairCommunicationService = new LocalService(configManager);    
+    
+    requestNextImage();
+    return; 
+  } 
+  
+  if(!configManager.isInitilised()){
+    return;     
   }
   
+  // ** initilisation check ** 
   if(pairCommunicationService != null){
     pairCommunicationService.update(et); 
   }
@@ -134,8 +154,10 @@ void draw(){
         textOverlayAnimator.setState(AnimationState.TransitionIn);       
       }
     }
-  }
-  
+  }  
+}
+
+void onDraw(float et){
   offscreenBuffer.beginDraw();    
      
   animationController.draw(offscreenBuffer, et);
@@ -162,9 +184,18 @@ void draw(){
   
   // rendering the text over the tiles (outside the OpenGL context) to resolve the bug of 
   // certain characters being missing from the text 
-  textOverlayAnimator.draw(this.g, et);
+  textOverlayAnimator.draw(this.g, et);  
+}
+
+void onPostDraw(float et){
+  if(!configManager.isInitilised()){
+    return;     
+  }
   
-  if(preparingToTransitionNewColour){
+  if(isReadyForNewImage()){        
+    requestNextImage();     
+  } 
+  else if(readyToMoveToNextImage){
     if(isReadyToMoveToNextImage()){      
       moveToNextImage();            
     } 
@@ -177,11 +208,7 @@ void draw(){
       readyToTransitionNewColour = false; 
       setAnimationState(AnimationState.TransitionOut); 
     }
-  }    
-  
-  if(isReadyForNewImage()){        
-    requestNextImage();     
-  } 
+  }
   
   if(configManager.isInitilised()){
     thread("updateConfigManager"); 
@@ -192,46 +219,6 @@ void updateConfigManager(){
   configManager.update(stateChangedCounter);
 }
 
-boolean isReadyToMoveToNextImage(){
-  if(configManager.currentImageId.length() == 0){
-    return true;   
-  }
-  
-  if(configManager.isMaster()){
-    // here we are keeping a 'score' (isReadyToMoveToNextImageScore) to ensure the system is stable and settled before 
-    // jumping to the next image i.e. we a slave has JUST transitioned to TransitionOut we want to wait a few 'ticks' to ensure 
-    // that the environment is 'stable' (remove noise) 
-    
-    // if all pairs are in a transition out and have the same image 
-    for(int i=0; i<configManager.getPairCount(); i++){
-      Pair p = configManager.getPairAtIndex(i); 
-      if(!p.currentImageId.equals(ldfService.getImageId())){
-        isReadyToMoveToNextImageScore = 0; 
-        return false;   
-      }
-      
-      if(p.currentAnimationState == AnimationState.TransitionIn.getValue()){
-        isReadyToMoveToNextImageScore = 0; 
-        return false;   
-      }
-    }        
-    
-    if(animationState == AnimationState.TransitionOut){
-      isReadyToMoveToNextImageScore += 1; 
-    } else{
-      isReadyToMoveToNextImageScore = 0;   
-    }
-    
-    return isReadyToMoveToNextImageScore >= 5; 
-  } else{
-    if(configManager.getMaster().currentAction != LocalService.ACTION_UPDATE_IMAGE){
-      return false;   
-    }
-    
-    return animationState == AnimationState.TransitionOut;
-  }
-}
-
 boolean isReadyForNewImage(){ 
   boolean inValidState = !ldfService.isFetchingImage() && !readyToTransitionNewColour && animationState == AnimationState.TransitionOut && !animationController.isAnimating();
   boolean alreadyHasNewImage = !configManager.currentImageId.equals(ldfService.getImageId()); 
@@ -239,6 +226,46 @@ boolean isReadyForNewImage(){
   boolean enoughTimeElapsedSinceStateChange = millis() - lastStateTimestamp >= configManager.elapsedStateIdleTimeBeforeImageUpdate;  
   
   return inValidState && !alreadyHasNewImage && (enoughTimeElapsed || requestedToUpdateImage) && enoughTimeElapsedSinceStateChange; 
+}
+
+boolean isReadyToMoveToNextImage(){
+  if(configManager.currentImageId.length() == 0){
+    return true;   
+  }
+  
+  if(configManager.isMaster()){
+    // here we are keeping a 'score' (readyToMoveToNextImageScore) to ensure the system is stable and settled before 
+    // jumping to the next image i.e. we a slave has JUST transitioned to TransitionOut we want to wait a few 'ticks' to ensure 
+    // that the environment is 'stable' (remove noise) 
+    
+    // if all pairs are in a transition out and have the same image 
+    for(int i=0; i<configManager.getPairCount(); i++){
+      Pair p = configManager.getPairAtIndex(i); 
+      if(!p.currentImageId.equals(ldfService.getImageId())){
+        readyToMoveToNextImageScore = 0; 
+        return false;   
+      }
+      
+      if(p.currentAnimationState == AnimationState.TransitionIn.getValue()){
+        readyToMoveToNextImageScore = 0; 
+        return false;   
+      }
+    }        
+    
+    if(animationState == AnimationState.TransitionOut){
+      readyToMoveToNextImageScore += 1; 
+    } else{
+      readyToMoveToNextImageScore = 0;   
+    }
+    
+    return readyToMoveToNextImageScore >= 5; 
+  } else{
+    if(configManager.getMaster().currentAction != LocalService.ACTION_UPDATE_IMAGE){
+      return false;   
+    }
+    
+    return animationState == AnimationState.TransitionOut;
+  }
 }
 
 void startPollDistanceThread(){
@@ -259,7 +286,7 @@ void updateProximityDetector(){
 }
 
 void onProximityChanged(ProximityRange currentRange){  
-  if(animationController == null){
+  if(animationController == null || pixCollection == null){
     return;   
   }
   
@@ -285,11 +312,11 @@ void keyPressed() {
 
 void onImageFetchComplete(LDFServiceAPI caller){ 
   println("onImageFetchComplete");
-  isReadyToMoveToNextImageScore = 0; 
-  preparingToTransitionNewColour = true; 
+  readyToMoveToNextImageScore = 0; 
+  readyToMoveToNextImage = true; 
   
   if(pairCommunicationService != null){
-    pairCommunicationService.updatePairsOfNewImageId(ldfService.getImageId());   
+    pairCommunicationService.updatePairsOfNewImageId(ldfService.getImageId(), ldfService.imageCounter);   
   }
 }
 
@@ -298,7 +325,7 @@ void onImageFetchFailed(LDFServiceAPI caller){
 }
 
 void moveToNextImage(){
-  preparingToTransitionNewColour = false;  
+  readyToMoveToNextImage = false;  
   imageUpdatedTimestamp = millis(); 
   
   if(pixCollection == null){
@@ -350,36 +377,36 @@ void setAnimationState(AnimationState state){
   }
 }
 
-void setPixCollectionAnimationForNewColourTransition(){
-  if(pixCollection == null){
-    return;   
-  }
+//void setPixCollectionAnimationForNewColourTransition(){
+//  if(pixCollection == null){
+//    return;   
+//  }
   
-  for(int y=0; y<pixCollection.sourceYRes; y++){
-    for(int x=0; x<pixCollection.sourceXRes; x++){
-      Pix pix = pixCollection.pixies[y][x];
+//  for(int y=0; y<pixCollection.sourceYRes; y++){
+//    for(int x=0; x<pixCollection.sourceXRes; x++){
+//      Pix pix = pixCollection.pixies[y][x];
       
-      // set source colour and animation time for LEVEL 0
-      float index = y * pixCollection.sourceXRes + x;   
-      float animTimeForLevel0 = 10.0f + index * 1.5f;
-      pix.setAnimTime(animTimeForLevel0, 0);
-    }
-  } 
-}
+//      // set source colour and animation time for LEVEL 0
+//      float index = y * pixCollection.sourceXRes + x;   
+//      float animTimeForLevel0 = 10.0f + index * 1.5f;
+//      pix.setAnimTime(animTimeForLevel0, 0);
+//    }
+//  } 
+//}
 
-void resetPixCollectionAnimation(){
-  if(pixCollection == null){
-    return;   
-  }
+//void resetPixCollectionAnimation(){
+//  if(pixCollection == null){
+//    return;   
+//  }
   
-  for(int y=0; y<pixCollection.sourceYRes; y++){
-    for(int x=0; x<pixCollection.sourceXRes; x++){
-      Pix pix = pixCollection.pixies[y][x];
+//  for(int y=0; y<pixCollection.sourceYRes; y++){
+//    for(int x=0; x<pixCollection.sourceXRes; x++){
+//      Pix pix = pixCollection.pixies[y][x];
       
-      // set source colour and animation time for LEVEL 0
-      float index = y * pixCollection.sourceXRes + x;
-      float animTimeForLevel0 = 500.0f;                  
-      pix.setAnimTime(animTimeForLevel0, 0);
-    }
-  } 
-}
+//      // set source colour and animation time for LEVEL 0
+//      float index = y * pixCollection.sourceXRes + x;
+//      float animTimeForLevel0 = 500.0f;                  
+//      pix.setAnimTime(animTimeForLevel0, 0);
+//    }
+//  } 
+//}
