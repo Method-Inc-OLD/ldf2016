@@ -1,7 +1,7 @@
 # London Design Festival 2016 
 
 ## Description 
-TODO
+TODO...
 
 
 ## Projects 
