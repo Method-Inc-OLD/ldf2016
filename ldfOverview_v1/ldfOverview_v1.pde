@@ -1,12 +1,16 @@
 
+float pingInterval = 600000;
 int mediumLevels = 20;
 int farLevels = 6;
 boolean fromImage = false;
 float transitionSpeed = 0.01;
 
+float lastPing = 0;
 
 boolean loadLocal = true;
 boolean proximitySensorRunning = false; 
+
+
 
 Service service;
 Generator generator;
@@ -28,6 +32,8 @@ void setup(){
   service = new Service( generator );
   
   startPollDistanceThread(); 
+  
+  lastPing = millis();
 }
 
 void startPollDistanceThread(){
@@ -56,6 +62,11 @@ void draw(){
     service.reGenerate();
     
   }
+  
+  if( millis() > lastPing + pingInterval ){
+    pingService();
+    lastPing = millis();
+  }
 }
 
 
@@ -63,7 +74,7 @@ void pingService(){
   thread( "pingTheService" );
 }
 void pingTheService(){
-  println("pinging it");
+  println("fetching updates");
   service.ping();
 }
 
