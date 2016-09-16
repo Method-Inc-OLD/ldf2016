@@ -1,5 +1,14 @@
 import java.util.*; 
 
+enum AppState{
+  Undefined, 
+  Initilising, 
+  FetchingFirstImage, 
+  Interactive, 
+  TransitioningOutImage, 
+  TransitioningInNewImage
+}
+
 PGraphics offscreenBuffer; 
 float lastUpdateTimestamp; 
 
@@ -11,22 +20,16 @@ PImage srcfullColourImage;
 PixCollection pixCollection;   
 AnimationController animationController; 
 
-TextAnimator textOverlayAnimator; 
-PFont font;
 PFont statusFont; 
 
 float imageUpdatedTimestamp = 0.0f; 
 float lastStateTimestamp = 0.0f;
-boolean requestedToUpdateImage = false; 
+boolean requestedToFetchNextImage = false; 
+boolean requestedToTransitionToNextImage = false;
 
+AppState appState = AppState.Undefined;
 AnimationState animationState = AnimationState.Idle; 
-int stateChangedCounter = 0; 
-
-int readyToMoveToNextImageScore = 0; 
-
-boolean readyToMoveToNextImage = false; 
-boolean readyToTransitionNewColour = false;  
-float readyToTransitionNewColourTimestamp = 0.0f; 
+int stateChangedCounter = 0;  
 
 ConfigManager configManager; 
 
@@ -38,6 +41,8 @@ LocalService pairCommunicationService;
 
 private static PApplet pApplet;
 
+private boolean requestRetryToFetchImage = false; 
+
 public static PApplet MainPApplet(){    
   return pApplet;    
 }
@@ -45,14 +50,17 @@ public static PApplet MainPApplet(){
 void setup() { 
     
   frameRate(FRAME_RATE);    
-  size(720, 480);
-  
-  surface.setResizable(false);
-  
-  pApplet = this;
-  
+  size(720, 480); 
+  surface.setResizable(false);  
+  pApplet = this;  
   noCursor();    
   
+  setAppState(AppState.Initilising);      
+  
+  lastUpdateTimestamp = millis();     
+} 
+
+void init(){
   initConfigManager();     
   
   initProximityDetector();
@@ -63,12 +71,10 @@ void setup() {
     
   initAnimationController(); 
   
-  initFontsAndTextOverlay();
+  initFonts();
   
   offscreenBuffer = createGraphics(width, height);
-  
-  lastUpdateTimestamp = millis();     
-} 
+}
 
 void initConfigManager(){
   configManager = new ConfigManager();
@@ -90,12 +96,8 @@ void _initProximityDetector(){
   proximityDetector.init();     
 }
 
-void initFontsAndTextOverlay(){
-  font = loadFont("Jungka-Medium-70.vlw");
-  statusFont = loadFont("courier-12.vlw");
-  
-  textOverlayAnimator = new TextAnimator(font, "");
-  textOverlayAnimator.hide(); 
+void initFonts(){
+  statusFont = loadFont("courier-12.vlw");    
 }
 
 void initAnimationController(){
@@ -125,36 +127,20 @@ void draw(){
 
 void onPreDraw(float et){
     
-  if(configManager.isFinishedInitilising()){
-    println("finished initlising");    
-    startPollDistanceThread();
-    
-    pairCommunicationService = new LocalService(configManager);    
-    
-    requestNextImage();
-    return; 
+  if(getAppState() == AppState.Initilising){
+    if(configManager.isInitilised()){      
+      setAppState(AppState.FetchingFirstImage);                  
+    }
   } 
   
-  if(!configManager.isInitilised()){
-    return;     
-  }
-  
-  // ** initilisation check ** 
-  if(pairCommunicationService != null){
+  if(getAppState() != AppState.Initilising && pairCommunicationService != null){
     pairCommunicationService.update(et); 
   }
   
-  if(!readyToTransitionNewColour){
-    if(animationState == AnimationState.TransitionIn){
-      if(!textOverlayAnimator.isAnimating() && textOverlayAnimator.getState() == AnimationState.TransitionOut && animationController.getState() != AnimationState.TransitionIn){
-        animationController.setState(AnimationState.TransitionIn);  
-      }
-    } else if(animationState == AnimationState.TransitionOut){
-      if(!animationController.isAnimating() && animationController.getState() == AnimationState.TransitionOut && textOverlayAnimator.getState() != AnimationState.TransitionIn){
-        textOverlayAnimator.setState(AnimationState.TransitionIn);       
-      }
-    }
-  }  
+  if(requestRetryToFetchImage){
+    requestRetryToFetchImage = false; 
+    requestNextImage(); 
+  }
 }
 
 void onDraw(float et){
@@ -180,91 +166,115 @@ void onDraw(float et){
     
   offscreenBuffer.endDraw();
   
-  image(offscreenBuffer, 0, 0, width, height);  
-  
-  // rendering the text over the tiles (outside the OpenGL context) to resolve the bug of 
-  // certain characters being missing from the text 
-  textOverlayAnimator.draw(this.g, et);  
+  image(offscreenBuffer, 0, 0, width, height);   
 }
 
 void onPostDraw(float et){
-  if(!configManager.isInitilised()){
+  if(getAppState() == AppState.Initilising){
     return;     
   }
   
-  if(isReadyForNewImage()){        
-    requestNextImage();     
-  } 
-  else if(readyToMoveToNextImage){
-    if(isReadyToMoveToNextImage()){      
-      moveToNextImage();            
+  if(isNewImageAvailable()){
+    if(getAppState() == AppState.FetchingFirstImage){
+      setAppState(AppState.TransitioningInNewImage); 
     } 
-  }
-  else if(readyToTransitionNewColour){
-    float elapsedTime = millis() - readyToTransitionNewColourTimestamp; 
-    if(elapsedTime >= 5000 && !textOverlayAnimator.isAnimating()){
-      animationController.setPaused(false);
-      textOverlayAnimator.text = ldfService.getColourName(); 
-      readyToTransitionNewColour = false; 
-      setAnimationState(AnimationState.TransitionOut); 
+    
+    if(getAppState() == AppState.Interactive && isValidToTransitionInNewImage()){
+      setAppState(AppState.TransitioningOutImage);    
     }
   }
   
-  if(configManager.isInitilised()){
-    thread("updateConfigManager"); 
+  if(getAppState() == AppState.TransitioningOutImage){
+    if(!animationController.isAnimating()){
+      setAppState(AppState.TransitioningInNewImage);    
+    }
+  }
+  
+  else if(getAppState() == AppState.TransitioningInNewImage){
+    if(!animationController.isAnimating()){
+      setAppState(AppState.Interactive);  
+    }
+  }
+  
+  else if(getAppState() == AppState.Interactive){
+    if(isValidToFetchNextImage()){
+      requestNextImage();   
+    }
+    
+    checkProximityChanges(); 
+  }
+  
+  if(configManager.isInitilised() && configManager.isReadyForUpdate()){
+    thread("asyncUpdateConfigManager"); 
   }
 }
 
-void updateConfigManager(){
+void checkProximityChanges(){
+  boolean inProximity = proximityDetector.currentRange != ProximityRange.Far && proximityDetector.currentRange != ProximityRange.Undefined;
+  if(inProximity && (animationState == AnimationState.Idle || animationState == AnimationState.TransitionOut)){
+    setAnimationState(AnimationState.TransitionIn);   
+  } else if(!inProximity && (animationState == AnimationState.Idle || animationState == AnimationState.TransitionIn)){
+    setAnimationState(AnimationState.TransitionOut);
+  }
+  
+  animationController.unlockLastFrame = proximityDetector.currentRange == ProximityRange.Close;  
+}
+
+void asyncUpdateConfigManager(){
   configManager.update(stateChangedCounter);
 }
 
-boolean isReadyForNewImage(){ 
-  boolean inValidState = !ldfService.isFetchingImage() && !readyToTransitionNewColour && animationState == AnimationState.TransitionOut && !animationController.isAnimating();
-  boolean alreadyHasNewImage = !configManager.currentImageId.equals(ldfService.getImageId()); 
-  boolean enoughTimeElapsed = (millis() - imageUpdatedTimestamp) >= configManager.imageUpdateFrequency && configManager.isMaster();
-  boolean enoughTimeElapsedSinceStateChange = millis() - lastStateTimestamp >= configManager.elapsedStateIdleTimeBeforeImageUpdate;  
-  
-  return inValidState && !alreadyHasNewImage && (enoughTimeElapsed || requestedToUpdateImage) && enoughTimeElapsedSinceStateChange; 
+void setRequestedToFetchNextImage(boolean val){
+  if(getAppState() == AppState.Interactive){
+    requestedToFetchNextImage = val;   
+  }
 }
 
-boolean isReadyToMoveToNextImage(){
-  if(configManager.currentImageId.length() == 0){
-    return true;   
+void setRequestedToTransitionToNextImage(boolean val){
+  if(getAppState() == AppState.Interactive){
+    requestedToTransitionToNextImage = val;   
+  }
+}
+
+boolean isValidToFetchNextImage(){
+  if(ldfService.isFetchingImage())
+    return false;   
+  
+  if(configManager.isMaster()){
+    return (millis() - imageUpdatedTimestamp) >= configManager.imageUpdateFrequency && configManager.isMaster();  
+  } else{
+    if(requestedToFetchNextImage){
+      requestedToFetchNextImage = false; 
+      return true; 
+    }    
+  }
+  
+  return false; 
+}
+
+boolean isValidToTransitionInNewImage(){
+  if(getAnimationState() != AnimationState.TransitionOut){
+    return false;   
   }
   
   if(configManager.isMaster()){
-    // here we are keeping a 'score' (readyToMoveToNextImageScore) to ensure the system is stable and settled before 
-    // jumping to the next image i.e. we a slave has JUST transitioned to TransitionOut we want to wait a few 'ticks' to ensure 
-    // that the environment is 'stable' (remove noise) 
-    
-    // if all pairs are in a transition out and have the same image 
     for(int i=0; i<configManager.getPairCount(); i++){
       Pair p = configManager.getPairAtIndex(i); 
-      if(!p.currentImageId.equals(ldfService.getImageId())){
-        readyToMoveToNextImageScore = 0; 
+      if(!p.currentImageId.equals(ldfService.getImageId())){ 
         return false;   
       }
       
       if(p.currentAnimationState == AnimationState.TransitionIn.getValue()){
-        readyToMoveToNextImageScore = 0; 
         return false;   
       }
-    }        
+    } 
     
-    if(animationState == AnimationState.TransitionOut){
-      readyToMoveToNextImageScore += 1; 
-    } else{
-      readyToMoveToNextImageScore = 0;   
-    }
-    
-    return readyToMoveToNextImageScore >= 5; 
+    return true; 
   } else{
-    if(configManager.getMaster().currentAction != LocalService.ACTION_UPDATE_IMAGE){
-      return false;   
+    if(requestedToTransitionToNextImage){
+      requestedToTransitionToNextImage = false;   
     }
-    
-    return animationState == AnimationState.TransitionOut;
+    return true; 
   }
 }
 
@@ -279,25 +289,14 @@ void updateProximityDetector(){
     int start = millis();     
     proximityDetector.update();
     int et = millis() - start; 
-    if(et < 500){
-      delay(500-et);     
+    if(et < 700){
+      delay(700-et);     
     }
   }      
 }
 
 void onProximityChanged(ProximityRange currentRange){  
-  if(animationController == null || pixCollection == null){
-    return;   
-  }
-  
-  boolean inProximity = currentRange != ProximityRange.Far && currentRange != ProximityRange.Undefined;
-  if(inProximity && (animationState == AnimationState.Idle || animationState == AnimationState.TransitionOut)){
-    setAnimationState(AnimationState.TransitionIn);   
-  } else if(!inProximity && (animationState == AnimationState.Idle || animationState == AnimationState.TransitionIn)){
-    setAnimationState(AnimationState.TransitionOut);
-  }
-  
-  animationController.unlockLastFrame = currentRange == ProximityRange.Close;  
+    
 }
 
 void keyPressed() {
@@ -311,9 +310,7 @@ void keyPressed() {
 }
 
 void onImageFetchComplete(LDFServiceAPI caller){ 
-  println("onImageFetchComplete");
-  readyToMoveToNextImageScore = 0; 
-  readyToMoveToNextImage = true; 
+  println("onImageFetchComplete");  
   
   if(pairCommunicationService != null){
     pairCommunicationService.updatePairsOfNewImageId(ldfService.getImageId(), ldfService.imageCounter);   
@@ -322,34 +319,60 @@ void onImageFetchComplete(LDFServiceAPI caller){
 
 void onImageFetchFailed(LDFServiceAPI caller){
   println("onImageFetchFailed");
+  requestRetryToFetchImage = true; 
 }
 
-void moveToNextImage(){
-  readyToMoveToNextImage = false;  
-  imageUpdatedTimestamp = millis(); 
+boolean isNewImageAvailable(){
+  if(ldfService == null || ldfService.isFetchingImage())
+    return false; 
   
-  if(pixCollection == null){
-    pixCollection = createPixCollection(configManager.resolutionX, configManager.resolutionY, (int)width, (int)height, configManager.levelsOfDetail, ldfService.sampleImage, ldfService.getColour());   
-  } else{
-    initPixCollection(pixCollection, ldfService.sampleImage, ldfService.getColour());
-  }
-    
-  animationController.init(ldfService.colourisedImage, ldfService.fullColourImage, pixCollection);
-  
-  configManager.currentImageId = ldfService.getImageId();
-  readyToTransitionNewColour = true;
-  readyToTransitionNewColourTimestamp = millis();  
-  textOverlayAnimator.setState(AnimationState.TransitionOut);
-  
-  if(configManager.isMaster()){
-    pairCommunicationService.updatePairsOfAction(LocalService.ACTION_UPDATE_IMAGE);     
-  }
+  return !ldfService.getImageId().equals(configManager.currentImageId);
 }
 
 void requestNextImage(){
-  println("requestNextImage");
-  requestedToUpdateImage = false;   // reset flag 
+  println("requestNextImage"); 
   ldfService.requestNextImage(); 
+}
+
+AppState getAppState(){
+  return appState;   
+}
+
+void setAppState(AppState state){
+  println("updating AppState from " + appState + " to " + state);
+  appState = state; 
+  
+  if(appState == AppState.Initilising){
+    init();   
+  } 
+  
+  else if(appState == AppState.FetchingFirstImage){
+    startPollDistanceThread();    
+    pairCommunicationService = new LocalService(configManager);    
+    requestNextImage();    
+  } 
+  
+  else if(appState == AppState.TransitioningOutImage){    
+    ((TextOverlayAnimator)animationController.getAnimatorAtIndex(0)).textAnimator.setState(AnimationState.TransitionIn);
+    
+    if(configManager.isMaster()){
+      pairCommunicationService.updatePairsOfAction(LocalService.ACTION_UPDATE_IMAGE);     
+    }
+  } 
+  
+  else if(appState == AppState.TransitioningInNewImage){
+    imageUpdatedTimestamp = millis(); 
+  
+    if(pixCollection == null)
+      pixCollection = createPixCollection(configManager.resolutionX, configManager.resolutionY, (int)width, (int)height, configManager.levelsOfDetail, ldfService.sampleImage, ldfService.getColour());   
+    else
+      initPixCollection(pixCollection, ldfService.sampleImage, ldfService.getColour());
+    
+    animationController.init(ldfService.colourisedImage, ldfService.fullColourImage, pixCollection, ldfService.getColourName());  
+    configManager.currentImageId = ldfService.getImageId();           
+    
+    setAnimationState(AnimationState.TransitionOut);        
+  }
 }
 
 AnimationState getAnimationState(){
@@ -370,43 +393,5 @@ void setAnimationState(AnimationState state){
     }
   }
   
-  if(state == AnimationState.TransitionOut){       
-      animationController.setState(state); 
-  } else if(state == AnimationState.TransitionIn){
-      textOverlayAnimator.setState(AnimationState.TransitionOut);
-  }
+  animationController.setState(state);
 }
-
-//void setPixCollectionAnimationForNewColourTransition(){
-//  if(pixCollection == null){
-//    return;   
-//  }
-  
-//  for(int y=0; y<pixCollection.sourceYRes; y++){
-//    for(int x=0; x<pixCollection.sourceXRes; x++){
-//      Pix pix = pixCollection.pixies[y][x];
-      
-//      // set source colour and animation time for LEVEL 0
-//      float index = y * pixCollection.sourceXRes + x;   
-//      float animTimeForLevel0 = 10.0f + index * 1.5f;
-//      pix.setAnimTime(animTimeForLevel0, 0);
-//    }
-//  } 
-//}
-
-//void resetPixCollectionAnimation(){
-//  if(pixCollection == null){
-//    return;   
-//  }
-  
-//  for(int y=0; y<pixCollection.sourceYRes; y++){
-//    for(int x=0; x<pixCollection.sourceXRes; x++){
-//      Pix pix = pixCollection.pixies[y][x];
-      
-//      // set source colour and animation time for LEVEL 0
-//      float index = y * pixCollection.sourceXRes + x;
-//      float animTimeForLevel0 = 500.0f;                  
-//      pix.setAnimTime(animTimeForLevel0, 0);
-//    }
-//  } 
-//}

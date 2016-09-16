@@ -110,7 +110,7 @@ class LocalService{
       }
       
       println("SERVER: updatePairsOfNewImageId: writing " + config.piIndex + ":IMAGEID:" + imageId + ":IMAGENUM:" + imageNumber + "\n");      
-      server.write(config.piIndex + ":IMAGEID:" + imageId + "\n");  
+      server.write(config.piIndex + ":IMAGEID:" + imageId + ":IMAGENUM:" + imageNumber + "\n");  
     } else if(client != null && isConnected()){
       println("CLIENT: updatePairsOfNewImageId: writing " + config.piIndex + ":IMAGEID:" + imageId + ":IMAGENUM:" + imageNumber + "\n");      
       client.write(config.piIndex + ":IMAGEID:" + imageId + "\n");
@@ -211,7 +211,7 @@ class LocalService{
       int imageNumber = int(lineComponents[4]);
       
       if(isClient() && imageNumber > 1){
-        requestedToUpdateImage = true;   
+        setRequestedToFetchNextImage(true);     
       }
       
       Pair p = config.getPairWithIndex(clientIndex);
@@ -238,7 +238,8 @@ class LocalService{
     else if(command.equals("ACTION")){
       Pair p = config.getPairWithIndex(clientIndex);
       if(p != null){ 
-        p.currentAction = int(data);             
+        p.currentAction = int(data);
+        setRequestedToTransitionToNextImage(true); 
       }
     }
   }

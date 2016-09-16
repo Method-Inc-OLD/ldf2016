@@ -85,6 +85,19 @@ public class ConfigManager{
     return piIndex == 0;   
   }
   
+  public boolean isReadyForUpdate(){
+    if(hostAddress == null)
+      return false;  
+    
+    if((millis() - lastRegisterRequest) > registerFrequency)
+        return true; 
+    
+    if((millis() - lastServerPing) > pingFrequency)
+      return true; 
+      
+    return false; 
+  }
+  
   public void update(int stateChangedCounter){
     if(hostAddress == null){
       return;   

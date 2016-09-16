@@ -35,14 +35,22 @@ public class AnimationController{
     this.height = height;           
   }
   
-  public void init(PImage image, PImage fullColourImage, PixCollection pixCollection){
+  public void init(PImage image, PImage fullColourImage, PixCollection pixCollection, String colourName){
     if(animators == null){
       animators = new Animator[3];   
     }
     
-    animators[0] = new PixCollectionAnimator(pixCollection); 
+    TextOverlayAnimator ca = new TextOverlayAnimator(
+    new TextAnimator(loadFont("Jungka-Medium-70.vlw"), colourName),
+      new PixCollectionAnimator(pixCollection)        
+    );        
+    animators[0] = ca;    
     animators[1] = new ImageAnimator(image, this.width, this.height, ImageAnimator.DEFAULT_ALPHA_FADE_IN_TIME, ImageAnimator.DEFAULT_ALPHA_FADE_OUT_TIME); 
     animators[2] = new ImageAnimator(fullColourImage, this.width, this.height, ImageAnimator.DEFAULT_ALPHA_FADE_IN_TIME_B, ImageAnimator.DEFAULT_ALPHA_FADE_OUT_TIME_B); 
+  }
+  
+  public Animator getAnimatorAtIndex(int index){
+    return animators[index];   
   }
   
   public void draw(PGraphics graphics, float et){
@@ -154,7 +162,7 @@ public class AnimationController{
 public class Animator{
   
   boolean paused = false; 
-  AnimationState state = AnimationState.Idle;
+  AnimationState state = AnimationState.TransitionOut;
   
   public Animator(){}
   
@@ -184,6 +192,67 @@ public class Animator{
   
   public void setPaused(boolean pause){
     this.paused = pause;     
+  }
+  
+  public boolean isPaused(){
+    return paused;   
+  }
+}
+
+public class TextOverlayAnimator extends Animator{
+  
+  TextAnimator textAnimator; 
+  Animator animator;  
+  
+  public TextOverlayAnimator(TextAnimator textAnimator, Animator animator){
+    super(); 
+    
+    this.textAnimator = textAnimator; 
+    this.animator = animator; 
+  }
+  
+  public void setState(AnimationState state){
+    this.state = state;  
+    
+    this.textAnimator.setState(state); 
+    this.animator.setState(state);
+  }
+ 
+  public AnimationState getState(){
+    return state;   
+  }
+  
+  public void draw(PGraphics graphics, float et){
+    if(state == AnimationState.TransitionIn){
+      this.animator.draw(graphics, this.textAnimator.isAnimating() ? 0 : et); 
+      this.textAnimator.draw(graphics, et);
+    } else if(state == AnimationState.TransitionOut){
+      this.animator.draw(graphics, et); 
+      if(!this.animator.isAnimating()){
+        this.textAnimator.draw(graphics, et);      
+      }
+    }    
+  }
+  
+  public boolean isAnimating(){
+    return this.textAnimator.isAnimating() || animator.isAnimating(); 
+  }
+  
+  public void hide(){
+    this.textAnimator.hide();  
+    this.animator.hide();   
+  }
+  
+  public void show(){
+    this.textAnimator.show();  
+    this.animator.show();
+  }  
+  
+  public void setPaused(boolean pause){
+    this.paused = pause;
+    
+    this.textAnimator.setPaused(this.paused);  
+    this.animator.setPaused(this.paused);
   }
   
   public boolean isPaused(){
@@ -245,7 +314,7 @@ public class PixCollectionAnimator extends Animator{
 
 public class TextAnimator extends Animator{
   public final float ALPHA_FADE_OUT_TIME = 500;
-  public final float ALPHA_FADE_IN_TIME = 1000;
+  public final float ALPHA_FADE_IN_TIME = 500;
   
   public int alpha = 0;   
   public float elapsedTime = 0.0f;
@@ -281,9 +350,9 @@ public class TextAnimator extends Animator{
     float t = elapsedTime / animTime; 
     t = min(1.0f, max(t, 0.0f));     
     
-    if(state == AnimationState.TransitionIn){
+    if(state == AnimationState.TransitionOut){
       alpha = (int)(255 * t);         
-    } else if(state == AnimationState.TransitionOut){      
+    } else if(state == AnimationState.TransitionIn){      
       alpha = 255 - (int)(255 * t);
     }
   }
