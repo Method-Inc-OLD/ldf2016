@@ -90,8 +90,8 @@ class Service{
           JSONArray rgb = colour.getJSONArray("rgb");
           
           float[] hsls = new float[3];
-          //hsls[0] = hsl.getFloat(0);
-          hsls[0] = hsl.getFloat(0) + random(180);
+          hsls[0] = hsl.getFloat(0);
+          //hsls[0] = hsl.getFloat(0) + random(180);
           hsls[1] = hsl.getFloat(1);
           hsls[2] = hsl.getFloat(2);
           
@@ -116,8 +116,8 @@ class Service{
          float population = colour.getFloat("population");
          
          float[] hsls = new float[3];
-         hsls[0] = hsl.getFloat(0) + random(180);
-         //hsls[0] = hsl.getFloat(0);
+         //hsls[0] = hsl.getFloat(0) + random(180);
+         hsls[0] = hsl.getFloat(0);
          hsls[1] = hsl.getFloat(1);
          hsls[2] = hsl.getFloat(2);
           
@@ -146,8 +146,8 @@ class Service{
          float population = colour.getFloat("population");
          
          float[] hsls = new float[3];
-         hsls[0] = hsl.getFloat(0) + random(180);
-         //hsls[0] = hsl.getFloat(0);
+         //hsls[0] = hsl.getFloat(0) + random(180);
+         hsls[0] = hsl.getFloat(0);
          hsls[1] = hsl.getFloat(1);
          hsls[2] = hsl.getFloat(2);
           

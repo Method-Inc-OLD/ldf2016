@@ -6,7 +6,7 @@ int farLevels = 5;
 boolean fromImage = false;
 float transitionSpeed = 0.01;
 
-boolean loadLocal = true;
+boolean loadLocal = false;
 
 boolean shouldSense = true;
 float distNear = 0.3;
