@@ -9,7 +9,7 @@ class LocalService{
   
   public static final int ACTION_UPDATE_IMAGE = 10; 
 
-  private int port = 8080;
+  private int port = 8888;
   
   private ConfigManager config; 
   
@@ -23,6 +23,9 @@ class LocalService{
   LocalService(ConfigManager config){
     println("setting up local connection"); 
     this.config = config; 
+    
+    this.port = config.p2pPort; 
+    
     init(); 
   }
   

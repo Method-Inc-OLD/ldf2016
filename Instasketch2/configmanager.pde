@@ -50,6 +50,8 @@ public class ConfigManager{
   private String currentImageId = "";
   private int stateChangedCounter = 0;
   
+  private int p2pPort = 8888; 
+  
   public ConfigManager(){
     initFromFile();     
   }
@@ -163,6 +165,8 @@ public class ConfigManager{
            
       showFrameRate = config.getInt("show_rate_rate") == 1;
       showDistance = config.getInt("show_distance") == 1;
+      
+      p2pPort = config.getInt("p2p_port"); 
     }
     
     println("finished parsing config params");
