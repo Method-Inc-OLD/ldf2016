@@ -98,9 +98,9 @@ class LDFServiceAPI{
     sampleImage = colourisedImage.copy(); 
     sampleImage.resize(configManager.resolutionX, configManager.resolutionY);        
     
-    lastImageTimestamp = millis();
-    setFetchingImage(false);    
-    onImageFetchComplete(this);                    
+    lastImageTimestamp = millis();       
+    onImageFetchComplete(this);
+    setFetchingImage(false);
   } 
   
   String getColourName(){
@@ -166,6 +166,8 @@ class LDFServiceAPI{
       }
     }
     fullColourImage.updatePixels();  
+    
+    println("finished fetchAndSetImage"); 
   }
   
   private void fetchAndSetColoursiedImage(ImageDetails imageDetails){
@@ -207,5 +209,7 @@ class LDFServiceAPI{
       }
     }
     colourisedImage.updatePixels();  
+    
+    println("Finished fetchAndSetColoursiedImage"); 
   }
 }

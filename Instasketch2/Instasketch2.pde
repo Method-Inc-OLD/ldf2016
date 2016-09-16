@@ -125,8 +125,8 @@ void draw(){
     
     pairCommunicationService = new LocalService(configManager);    
     
-    requestNextImage();           
-  }
+    requestNextImage();    
+  } 
   
   if(pairCommunicationService != null){
     pairCommunicationService.update(et); 
