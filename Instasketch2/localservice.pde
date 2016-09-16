@@ -9,7 +9,7 @@ class LocalService{
   
   public static final int ACTION_UPDATE_IMAGE = 10; 
 
-  private int port = 8888;
+  private int port = 8080;
   
   private ConfigManager config; 
   

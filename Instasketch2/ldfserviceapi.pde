@@ -170,7 +170,7 @@ class LDFServiceAPI{
   
   private void fetchAndSetColoursiedImage(ImageDetails imageDetails){
     // call the colourise service 
-    String colouriseUrl = URL_COLOURISED_IMAGE + "?image_url=" + imageDetails.getImageSrc() + "&colours=5" + "&swatch_index=" + configManager.piIndex;
+    String colouriseUrl = URL_COLOURISED_IMAGE + "?image_url=" + imageDetails.getImageSrc() + "&colours=5" + "&swatch_index=" + configManager.piIndex + "&image_id=" + imageDetails.getImageId();
     log("POSTING: " + colouriseUrl); 
     
     PImage image = loadImage(colouriseUrl, "jpg");
