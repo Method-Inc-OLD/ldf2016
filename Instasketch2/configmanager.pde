@@ -57,16 +57,21 @@ public class ConfigManager{
   public void init(){
     initIPAddress();         
     register();  
-    initilised = true; 
+    setInitilised(true); 
   }
   
-  public boolean isInitilised(){
+  synchronized public boolean isInitilised(){
     return initilised;    
   }
   
-  public boolean isFinishedInitilising(){
+  synchronized void setInitilised(boolean val){
+    println("setInitilised " + val);
+    initilised = val; 
+  }
+  
+  synchronized public boolean isFinishedInitilising(){
     boolean res = false; 
-    if(initilised && !finishedInitilising){
+    if(isInitilised() && !finishedInitilising){
       res = true; 
       finishedInitilising = true; 
     }
@@ -159,6 +164,8 @@ public class ConfigManager{
       showFrameRate = config.getInt("show_rate_rate") == 1;
       showDistance = config.getInt("show_distance") == 1;
     }
+    
+    println("finished parsing config params");
   }
   
   public void ping(){

@@ -45,7 +45,8 @@ public static PApplet MainPApplet(){
 void setup() { 
     
   frameRate(FRAME_RATE);  
-  size(720, 480, P2D);  
+  //size(720, 480, P2D);  
+  size(720, 480);
   //fullScreen(P2D);
   
   surface.setResizable(false);
@@ -66,7 +67,8 @@ void setup() {
   
   initFontsAndTextOverlay();
   
-  offscreenBuffer = createGraphics(width, height, P2D);  
+  //offscreenBuffer = createGraphics(width, height, P2D);  
+  offscreenBuffer = createGraphics(width, height);
   
   lastUpdateTimestamp = millis();     
 } 
@@ -81,8 +83,8 @@ void asyncInitConfigManager(){
 }
 
 void initProximityDetector(){  
-  proximityDetector = new MockProximityDetector();
-  //proximityDetector = new UltrasonicProximityDetector();  
+  //proximityDetector = new MockProximityDetector();
+  proximityDetector = new UltrasonicProximityDetector();  
 }
 
 void initFontsAndTextOverlay(){
@@ -112,6 +114,7 @@ void draw(){
   lastUpdateTimestamp = millis(); 
   
   if(configManager.isFinishedInitilising()){
+    println("finished initlising"); 
     pairCommunicationService = new LocalService(configManager);
     requestNextImage();   
     startPollDistanceThread();
@@ -180,7 +183,9 @@ void draw(){
     requestNextImage();     
   } 
   
-  thread("updateConfigManager"); 
+  if(configManager.isInitilised()){
+    thread("updateConfigManager"); 
+  }
 }
 
 void updateConfigManager(){
@@ -237,6 +242,7 @@ boolean isReadyForNewImage(){
 }
 
 void startPollDistanceThread(){
+  println("startPollDistanceThread"); 
   thread("updateProximityDetector");    
 }
 
@@ -314,6 +320,7 @@ void moveToNextImage(){
 }
 
 void requestNextImage(){
+  println("requestNextImage");
   requestedToUpdateImage = false;   // reset flag 
   ldfService.requestNextImage(); 
 }

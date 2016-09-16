@@ -19,6 +19,7 @@ class LocalService{
   private Client client; 
 
   LocalService(ConfigManager config){
+    println("setting up local connection"); 
     this.config = config; 
     init(); 
   }
