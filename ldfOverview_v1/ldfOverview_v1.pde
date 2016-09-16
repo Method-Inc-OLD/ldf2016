@@ -5,7 +5,7 @@ boolean fromImage = false;
 float transitionSpeed = 0.01;
 
 
-boolean loadLocal = false;
+boolean loadLocal = true;
 boolean proximitySensorRunning = false; 
 
 Service service;

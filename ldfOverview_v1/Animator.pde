@@ -66,7 +66,14 @@ class Animator{
  
  
  void render(){
-   
+   if ( shouldChangeColours && changeInterp > 1 ){
+      near = newNear;
+      far = newFar;
+      medium = newMedium;
+      
+      changeInterp = 0;
+      shouldChangeColours = false;
+   }
    
    //println( "INT: " + interpolator + " | " + nearInterp1 );
    
@@ -104,12 +111,10 @@ class Animator{
    
    
    
-   if ( shouldChangeColours ){
-    if ( changeInterp < 1 ){
+   if ( shouldChangeColours && changeInterp < 1 ){
+
       // changing
-      
-      println("interpolating");
-      
+            
       if( interpolator < 0 ){
         // nothing
         tint( 255, changeInterp*255 );
@@ -127,17 +132,6 @@ class Animator{
       
       changeInterp += transitionSpeed;
       
-    } else {
-      // finished
-      changeInterp = 0;
-      shouldChangeColours = false;
-      println("changed");
-      
-      near = newNear;
-      far = newFar;
-      medium = newMedium;
-      
-    }
    }
    
  }
