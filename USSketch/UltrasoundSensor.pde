@@ -71,11 +71,22 @@ class Sensor {
       state = 2;
     }
     
-    println( distance + " | " + elapsedCalc +" | "+ dst + " | " + elapsedTime );
+    //println( distance + " | " + elapsedCalc +" | "+ dst + " | " + elapsedTime );
     
     // 480 - 17
     
   }
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
   
   public int getState(){
    return state; 
