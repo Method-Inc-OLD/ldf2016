@@ -77,6 +77,17 @@ class Sensor {
     
   }
   
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
   public int getState(){
    return state; 
   }
