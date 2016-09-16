@@ -22,17 +22,17 @@ boolean requestedToUpdateImage = false;
 AnimationState animationState = AnimationState.Idle; 
 int stateChangedCounter = 0; 
 
-ProximityDetector proximityDetector;
-
-LDFServiceAPI ldfService;
+int isReadyToMoveToNextImageScore = 0; 
 
 boolean preparingToTransitionNewColour = false; 
 boolean readyToTransitionNewColour = false;  
 float readyToTransitionNewColourTimestamp = 0.0f; 
 
-int isReadyToMoveToNextImageScore = 0; 
-
 ConfigManager configManager; 
+
+ProximityDetector proximityDetector;
+
+LDFServiceAPI ldfService;
 
 LocalService pairCommunicationService; 
 
@@ -44,10 +44,8 @@ public static PApplet MainPApplet(){
 
 void setup() { 
     
-  frameRate(FRAME_RATE);  
-  //size(720, 480, P2D);  
+  frameRate(FRAME_RATE);    
   size(720, 480);
-  //fullScreen(P2D);
   
   surface.setResizable(false);
   
@@ -67,7 +65,6 @@ void setup() {
   
   initFontsAndTextOverlay();
   
-  //offscreenBuffer = createGraphics(width, height, P2D);  
   offscreenBuffer = createGraphics(width, height);
   
   lastUpdateTimestamp = millis();     
@@ -119,15 +116,30 @@ void draw(){
   float et = millis() - lastUpdateTimestamp;
   lastUpdateTimestamp = millis(); 
   
+  onPreDraw(et); 
+  
+  onDraw(et);  
+  
+  onPostDraw(et);     
+}
+
+void onPreDraw(float et){
+    
   if(configManager.isFinishedInitilising()){
     println("finished initlising");    
     startPollDistanceThread();
     
     pairCommunicationService = new LocalService(configManager);    
     
-    requestNextImage();    
+    requestNextImage();
+    
   } 
   
+  if(!configManager.isInitilised()){
+    return;     
+  }
+  
+  // ** initilisation check ** 
   if(pairCommunicationService != null){
     pairCommunicationService.update(et); 
   }
@@ -142,8 +154,10 @@ void draw(){
         textOverlayAnimator.setState(AnimationState.TransitionIn);       
       }
     }
-  }
-  
+  }  
+}
+
+void onDraw(float et){
   offscreenBuffer.beginDraw();    
      
   animationController.draw(offscreenBuffer, et);
@@ -170,7 +184,13 @@ void draw(){
   
   // rendering the text over the tiles (outside the OpenGL context) to resolve the bug of 
   // certain characters being missing from the text 
-  textOverlayAnimator.draw(this.g, et);
+  textOverlayAnimator.draw(this.g, et);  
+}
+
+void onPostDraw(float et){
+  if(!configManager.isInitilised()){
+    return;     
+  }
   
   if(preparingToTransitionNewColour){
     if(isReadyToMoveToNextImage()){      
