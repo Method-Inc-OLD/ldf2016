@@ -1,10 +1,11 @@
 
-
 int mediumLevels = 20;
 int farLevels = 6;
 boolean fromImage = false;
 float transitionSpeed = 0.01;
 
+
+boolean loadLocal = true;
 boolean proximitySensorRunning = false; 
 
 Service service;
