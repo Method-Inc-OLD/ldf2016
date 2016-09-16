@@ -22,9 +22,9 @@ boolean requestedToUpdateImage = false;
 AnimationState animationState = AnimationState.Idle; 
 int stateChangedCounter = 0; 
 
-int isReadyToMoveToNextImageScore = 0; 
+int readyToMoveToNextImageScore = 0; 
 
-boolean preparingToTransitionNewColour = false; 
+boolean readyToMoveToNextImage = false; 
 boolean readyToTransitionNewColour = false;  
 float readyToTransitionNewColourTimestamp = 0.0f; 
 
@@ -192,7 +192,7 @@ void onPostDraw(float et){
     return;     
   }
   
-  if(preparingToTransitionNewColour){
+  if(readyToMoveToNextImage){
     if(isReadyToMoveToNextImage()){      
       moveToNextImage();            
     } 
@@ -226,7 +226,7 @@ boolean isReadyToMoveToNextImage(){
   }
   
   if(configManager.isMaster()){
-    // here we are keeping a 'score' (isReadyToMoveToNextImageScore) to ensure the system is stable and settled before 
+    // here we are keeping a 'score' (readyToMoveToNextImageScore) to ensure the system is stable and settled before 
     // jumping to the next image i.e. we a slave has JUST transitioned to TransitionOut we want to wait a few 'ticks' to ensure 
     // that the environment is 'stable' (remove noise) 
     
@@ -234,23 +234,23 @@ boolean isReadyToMoveToNextImage(){
     for(int i=0; i<configManager.getPairCount(); i++){
       Pair p = configManager.getPairAtIndex(i); 
       if(!p.currentImageId.equals(ldfService.getImageId())){
-        isReadyToMoveToNextImageScore = 0; 
+        readyToMoveToNextImageScore = 0; 
         return false;   
       }
       
       if(p.currentAnimationState == AnimationState.TransitionIn.getValue()){
-        isReadyToMoveToNextImageScore = 0; 
+        readyToMoveToNextImageScore = 0; 
         return false;   
       }
     }        
     
     if(animationState == AnimationState.TransitionOut){
-      isReadyToMoveToNextImageScore += 1; 
+      readyToMoveToNextImageScore += 1; 
     } else{
-      isReadyToMoveToNextImageScore = 0;   
+      readyToMoveToNextImageScore = 0;   
     }
     
-    return isReadyToMoveToNextImageScore >= 5; 
+    return readyToMoveToNextImageScore >= 5; 
   } else{
     if(configManager.getMaster().currentAction != LocalService.ACTION_UPDATE_IMAGE){
       return false;   
@@ -287,7 +287,7 @@ void updateProximityDetector(){
 }
 
 void onProximityChanged(ProximityRange currentRange){  
-  if(animationController == null){
+  if(animationController == null || pixCollection == null){
     return;   
   }
   
@@ -313,8 +313,8 @@ void keyPressed() {
 
 void onImageFetchComplete(LDFServiceAPI caller){ 
   println("onImageFetchComplete");
-  isReadyToMoveToNextImageScore = 0; 
-  preparingToTransitionNewColour = true; 
+  readyToMoveToNextImageScore = 0; 
+  readyToMoveToNextImage = true; 
   
   if(pairCommunicationService != null){
     pairCommunicationService.updatePairsOfNewImageId(ldfService.getImageId());   
@@ -326,7 +326,7 @@ void onImageFetchFailed(LDFServiceAPI caller){
 }
 
 void moveToNextImage(){
-  preparingToTransitionNewColour = false;  
+  readyToMoveToNextImage = false;  
   imageUpdatedTimestamp = millis(); 
   
   if(pixCollection == null){

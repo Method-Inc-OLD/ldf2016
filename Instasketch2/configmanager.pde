@@ -103,6 +103,10 @@ public class ConfigManager{
   }
   
   public void register(){
+    if(isFetchingImage()){
+      return;   
+    }
+    
     lastRegisterRequest = millis(); 
         
     final String url = "http://instacolour.herokuapp.com/api/registerpi?pi_index=" + piIndex + "&hostaddress=" + hostAddress;
@@ -173,6 +177,9 @@ public class ConfigManager{
   }
   
   public void ping(){
+    if(isFetchingImage()){
+      return;   
+    }
      lastServerPing = millis(); 
      
      final String url = "http://instacolour.herokuapp.com/api/piping?pi_index=" + piIndex + "&hostaddress=" + hostAddress + "&image_id=" + currentImageId

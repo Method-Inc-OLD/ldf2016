@@ -121,12 +121,12 @@ class LocalService{
   
   public boolean updatePairsOfNewAnimationState(int state){
     if(server != null && isConnected()){      
-      println("SERVER: updatePairsOfNewImageId: writing " + config.piIndex + ":ANIMSTATE:" + state + "\n");
+      println("SERVER: updatePairsOfNewAnimationState: writing " + config.piIndex + ":ANIMSTATE:" + state + "\n");
       try{
         server.write(config.piIndex + ":ANIMSTATE:" + state + "\n");
       } catch(Exception e){ server = null; } 
     } else if(client != null && isConnected()){
-      println("CLIENT: updatePairsOfNewImageId: writing " + config.piIndex + ":ANIMSTATE:" + state + "\n");
+      println("CLIENT: updatePairsOfNewAnimationState: writing " + config.piIndex + ":ANIMSTATE:" + state + "\n");
       try{
         client.write(config.piIndex + ":ANIMSTATE:" + state + "\n");
       } catch(Exception e){ client = null; } 
@@ -137,12 +137,12 @@ class LocalService{
   
   public boolean updatePairsOfAction(int action){
     if(server != null && isConnected()){      
-      println("SERVER: updatePairsOfNewImageId: writing " + config.piIndex + ":ACTION:" + action + "\n");
+      println("SERVER: updatePairsOfAction: writing " + config.piIndex + ":ACTION:" + action + "\n");
       try{
         server.write(config.piIndex + ":ACTION:" + action + "\n");
       } catch(Exception e){ server = null; } 
     } else if(client != null && isConnected()){
-      println("CLIENT: updatePairsOfNewImageId: writing " + config.piIndex + ":ACTION:" + action + "\n");
+      println("CLIENT: updatePairsOfAction: writing " + config.piIndex + ":ACTION:" + action + "\n");
       try{
         client.write(config.piIndex + ":ACTION:" + action + "\n");
       } catch(Exception e){ client = null; } 

@@ -1,5 +1,9 @@
 
-// HACK 
+
+boolean isFetchingImage(){
+  return ldfService == null || ldfService.isFetchingImage(); 
+}
+ 
 void asyncFetchNextImage(){
   ldfService.fetchNextImage(); 
 }
