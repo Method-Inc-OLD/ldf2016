@@ -55,9 +55,7 @@ void setup() {
   
   noCursor();    
   
-  initConfigManager(); 
-  
-  initProximityDetector();
+  initConfigManager();     
   
   iniSourceDimensions();    
   
@@ -120,10 +118,13 @@ void draw(){
   lastUpdateTimestamp = millis(); 
   
   if(configManager.isFinishedInitilising()){
-    println("finished initlising"); 
-    pairCommunicationService = new LocalService(configManager);
-    requestNextImage();   
+    println("finished initlising");
+    initProximityDetector();
     startPollDistanceThread();
+    
+    pairCommunicationService = new LocalService(configManager);    
+    
+    requestNextImage();           
   }
   
   if(pairCommunicationService != null){

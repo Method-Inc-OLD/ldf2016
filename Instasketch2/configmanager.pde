@@ -111,7 +111,7 @@ public class ConfigManager{
     
     JSONObject responseJSON = loadJSONObject(url);
     if(responseJSON == null){
-      // TODO; handle exception 
+      println("Error while registering, response is empty");
       return; 
     }        
     
