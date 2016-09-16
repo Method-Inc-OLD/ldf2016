@@ -45,7 +45,8 @@ public static PApplet MainPApplet(){
 void setup() { 
     
   frameRate(FRAME_RATE);  
-  size(720, 480, P2D);  
+  //size(720, 480, P2D);  
+  size(720, 480);
   //fullScreen(P2D);
   
   surface.setResizable(false);
@@ -66,7 +67,8 @@ void setup() {
   
   initFontsAndTextOverlay();
   
-  offscreenBuffer = createGraphics(width, height, P2D);  
+  //offscreenBuffer = createGraphics(width, height, P2D);  
+  offscreenBuffer = createGraphics(width, height);
   
   lastUpdateTimestamp = millis();     
 } 
