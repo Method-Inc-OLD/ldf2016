@@ -94,7 +94,7 @@ void _initProximityDetector(){
 }
 
 void initFontsAndTextOverlay(){
-  font = loadFont("Helvetica-70.vlw");
+  font = loadFont("Jungka-Medium-70.vlw");
   statusFont = loadFont("courier-12.vlw");
   
   textOverlayAnimator = new TextAnimator(font, "");
