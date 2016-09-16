@@ -159,6 +159,8 @@ public class ConfigManager{
       showFrameRate = config.getInt("show_rate_rate") == 1;
       showDistance = config.getInt("show_distance") == 1;
     }
+    
+    println("finished parsing config params");
   }
   
   public void ping(){

@@ -114,6 +114,7 @@ void draw(){
   lastUpdateTimestamp = millis(); 
   
   if(configManager.isFinishedInitilising()){
+    println("finished initlising"); 
     pairCommunicationService = new LocalService(configManager);
     requestNextImage();   
     startPollDistanceThread();
@@ -239,6 +240,7 @@ boolean isReadyForNewImage(){
 }
 
 void startPollDistanceThread(){
+  println("startPollDistanceThread"); 
   thread("updateProximityDetector");    
 }
 
@@ -316,6 +318,7 @@ void moveToNextImage(){
 }
 
 void requestNextImage(){
+  println("requestNextImage");
   requestedToUpdateImage = false;   // reset flag 
   ldfService.requestNextImage(); 
 }
