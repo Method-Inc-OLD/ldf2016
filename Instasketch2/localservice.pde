@@ -90,7 +90,7 @@ class LocalService{
     try{
       client = new Client(MainPApplet(), config.getMaster().hostAddress, port);
     } catch(Exception e){
-      retryCounter = 50;   
+      retryCounter = 500;   
     }
   }
   
