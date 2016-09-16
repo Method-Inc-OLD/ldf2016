@@ -22,11 +22,19 @@ class UltrasonicProximityDetector extends ProximityDetector {
    *  http://www.raspberrypi-spy.co.uk/2013/01/ultrasonic-distance-measurement-using-python-part-2/
    **/
   public UltrasonicProximityDetector() {
-    super();   
-
-    initSensor();  
-
-    update();
+    super();           
+  }
+  
+  void init(){
+    try{
+      initSensor();
+    } catch(Exception e){
+      return;   
+    }
+    
+    initilised = true;
+    
+    update();            
   }
 
   private void initSensor() {
@@ -39,7 +47,7 @@ class UltrasonicProximityDetector extends ProximityDetector {
   void update() {
     super.update(); 
 
-    if (!isReady()) {
+    if (!isReady() && initilised) {
       return;
     }        
 
