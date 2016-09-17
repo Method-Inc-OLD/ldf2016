@@ -102,12 +102,12 @@ class LocalService{
   
   public boolean introduceSelf(){
     if(server != null && isConnected()){
-      println("SERVER: introduceSelf: writing " + config.piIndex + "\n");
+      println("SERVER: HI: writing " + config.piIndex + "\n");
       try{
         server.write(config.piIndex + ":HI:" + config.piIndex + "\n");
       } catch(Exception e){ server = null; } 
     } else if(client != null && isConnected()){
-      println("CLIENT: introduceSelf: writing " + config.piIndex + "\n");
+      println("CLIENT: HI: writing " + config.piIndex + "\n");
       try{
         client.write(config.piIndex + ":HI:" + config.piIndex + "\n");        
       } catch(Exception e){ client = null; } 
@@ -127,10 +127,10 @@ class LocalService{
           clientPair.waitingForImage = true; 
       }
       
-      println("SERVER: updatePairsOfNewImageId: writing " + config.piIndex + ":IMAGEID:" + imageId + ":IMAGENUM:" + imageNumber + "\n");      
+      println("SERVER: NEW IMAGE ID: writing " + config.piIndex + ":IMAGEID:" + imageId + ":IMAGENUM:" + imageNumber + "\n");      
       server.write(config.piIndex + ":IMAGEID:" + imageId + ":IMAGENUM:" + imageNumber + "\n");  
     } else if(client != null && isConnected()){
-      println("CLIENT: updatePairsOfNewImageId: writing " + config.piIndex + ":IMAGEID:" + imageId + ":IMAGENUM:" + imageNumber + "\n");      
+      println("CLIENT: NEW IMAGE ID: writing " + config.piIndex + ":IMAGEID:" + imageId + ":IMAGENUM:" + imageNumber + "\n");      
       client.write(config.piIndex + ":IMAGEID:" + imageId + "\n");
     }        
     
@@ -139,12 +139,12 @@ class LocalService{
   
   public boolean updatePairsOfNewAnimationState(int state){
     if(server != null && isConnected()){      
-      println("SERVER: updatePairsOfNewAnimationState: writing " + config.piIndex + ":ANIMSTATE:" + state + "\n");
+      println("SERVER: ANIM STATE: writing " + config.piIndex + ":ANIMSTATE:" + state + "\n");
       try{
         server.write(config.piIndex + ":ANIMSTATE:" + state + "\n");
       } catch(Exception e){ server = null; } 
     } else if(client != null && isConnected()){
-      println("CLIENT: updatePairsOfNewAnimationState: writing " + config.piIndex + ":ANIMSTATE:" + state + "\n");
+      println("CLIENT: ANIM STATE: writing " + config.piIndex + ":ANIMSTATE:" + state + "\n");
       try{
         client.write(config.piIndex + ":ANIMSTATE:" + state + "\n");
       } catch(Exception e){ client = null; } 
@@ -155,12 +155,12 @@ class LocalService{
   
   public boolean updatePairsOfAction(int action){
     if(server != null && isConnected()){      
-      println("SERVER: updatePairsOfAction: writing " + config.piIndex + ":ACTION:" + action + "\n");
+      println("SERVER: ACTION: writing " + config.piIndex + ":ACTION:" + action + "\n");
       try{
         server.write(config.piIndex + ":ACTION:" + action + "\n");
       } catch(Exception e){ server = null; } 
     } else if(client != null && isConnected()){
-      println("CLIENT: updatePairsOfAction: writing " + config.piIndex + ":ACTION:" + action + "\n");
+      println("CLIENT: ACTION: writing " + config.piIndex + ":ACTION:" + action + "\n");
       try{
         client.write(config.piIndex + ":ACTION:" + action + "\n");
       } catch(Exception e){ client = null; } 
@@ -185,12 +185,12 @@ class LocalService{
     if(client != null){
       if (client.available() > 0) {    
         String input = client.readString();
-        println("Data from server " + input); 
+        println("DATA RECEIVED FROM SERVER " + input); 
         String lines[] = input.split("\n");
         
         if(lines != null && lines.length > 0){
           for(int i=0; i<lines.length; i++){
-            processPairMessage(lines[i]);                     
+            processPairMessage(client.ip(), lines[i]);                     
           }
         }
       } 
@@ -201,11 +201,11 @@ class LocalService{
       Client pairClient = server.available();  
       while(pairClient != null){
         String input = pairClient.readString();
-        println("Data from client " + pairClient.ip() + " " + input);
+        println("DATA RECEIVED FROM CLIENT " + pairClient.ip() + " " + input);
         String lines[] = input.split("\n");
         if(lines != null && lines.length > 0){
           for(int i=0; i<lines.length; i++){
-            processPairMessage(lines[i]); 
+            processPairMessage(pairClient.ip(), lines[i]); 
           }
         }
                 
@@ -214,7 +214,7 @@ class LocalService{
     }
   }  
   
-  private void processPairMessage(String line){
+  private void processPairMessage(String ipAddress, String line){
     if(line == null || line.length() == 0){
       return;   
     }
@@ -231,39 +231,46 @@ class LocalService{
       if(isClient() && imageNumber > 1){
         setRequestedToFetchNextImage(true);     
       }
-      
+            
       Pair p = config.getPairWithIndex(clientIndex);
-      if(p != null){ 
-        p.currentImageId = data;
-        p.currentImageNumber = imageNumber; 
-        if(isServer()){
-          p.waitingForImage = false;   
-        } else{
-          p.currentAction = -1;  
-        }
+      p.hostAddress = ipAddress;
+      
+      println("Updating Pair " + p.index + " image id");
+      
+      p.currentImageId = data;
+      p.currentImageNumber = imageNumber; 
+      if(isServer()){
+        p.waitingForImage = false;   
+      } else{
+        p.currentAction = -1;  
       }
     }
     
     /*** ANIMSTATE **/ 
-    else if(command.equals("ANIMSTATE")){
+    else if(command.equals("ANIMSTATE")){            
       Pair p = config.getPairWithIndex(clientIndex);
-      if(p != null){ 
-        p.currentAnimationState = int(data);             
-      }
+      p.hostAddress = ipAddress;
+        
+      println("Updating Pair " + p.index + " animation state");
+        
+      p.currentAnimationState = int(data);                  
     }
     
     /*** ACTION **/ 
-    else if(command.equals("ACTION")){
+    else if(command.equals("ACTION")){      
       Pair p = config.getPairWithIndex(clientIndex);
-      if(p != null){ 
-        p.currentAction = int(data);
-        setRequestedToTransitionToNextImage(true); 
-      }
+      p.hostAddress = ipAddress;
+        
+      println("Updating Pair " + p.index + " animation state");
+        
+      p.currentAction = int(data);
+      setRequestedToTransitionToNextImage(true);      
     }
     
     /*** HI **/ 
     else if(command.equals("HI")){
-      config.getPairWithIndex(clientIndex);      
+      Pair p = config.getPairWithIndex(clientIndex);
+      p.hostAddress = ipAddress;      
     }
   }
   

@@ -211,6 +211,10 @@ public class ConfigManager{
         
         if(pairPIIndex == piIndex)
           continue; 
+          
+        // is master? we only want to find the master so we can connect to it.
+        if(pairPIIndex != 0)
+          continue;
         
         String pairHostAddress = pairJSON.getString("hostaddress");
         

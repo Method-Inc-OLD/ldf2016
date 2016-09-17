@@ -172,17 +172,7 @@ void onDraw(float et){
 void onPostDraw(float et){
   if(getAppState() == AppState.Initilising){
     return;     
-  }
-  
-  if(isNewImageAvailable()){
-    if(getAppState() == AppState.FetchingFirstImage){
-      setAppState(AppState.TransitioningInNewImage); 
-    } 
-    
-    if(getAppState() == AppState.Interactive && isValidToTransitionInNewImage()){
-      setAppState(AppState.TransitioningOutImage);    
-    }
-  }
+  }    
   
   if(getAppState() == AppState.TransitioningOutImage){
     if(!animationController.isAnimating()){
@@ -202,6 +192,16 @@ void onPostDraw(float et){
     }
     
     checkProximityChanges(); 
+  }
+  
+  if(isNewImageAvailable()){
+    if(getAppState() == AppState.FetchingFirstImage){
+      setAppState(AppState.TransitioningInNewImage); 
+    } 
+    
+    else if(getAppState() == AppState.Interactive && isValidToTransitionInNewImage()){
+      setAppState(AppState.TransitioningOutImage);    
+    }
   }
   
   if(configManager.isInitilised() && configManager.isReadyForUpdate()){
@@ -225,13 +225,13 @@ void asyncUpdateConfigManager(){
 }
 
 void setRequestedToFetchNextImage(boolean val){
-  if(getAppState() == AppState.Interactive){
+  if(getAppState() != AppState.Initilising && getAppState() != AppState.FetchingFirstImage){
     requestedToFetchNextImage = val;   
   }
 }
 
 void setRequestedToTransitionToNextImage(boolean val){
-  if(getAppState() == AppState.Interactive){
+  if(getAppState() != AppState.Initilising && getAppState() != AppState.FetchingFirstImage){
     requestedToTransitionToNextImage = val;   
   }
 }
@@ -262,7 +262,7 @@ boolean isValidToTransitionInNewImage(){
   if(configManager.isMaster()){
     for(int i=0; i<configManager.getPairCount(); i++){
       Pair p = configManager.getPairAtIndex(i); 
-      if(!p.currentImageId.equals(ldfService.getImageId())){ 
+      if(p.waitingForImage){ 
         return false;   
       }
       
@@ -274,9 +274,11 @@ boolean isValidToTransitionInNewImage(){
     return true; 
   } else{
     if(requestedToTransitionToNextImage){
-      requestedToTransitionToNextImage = false;   
-    }
-    return true; 
+      requestedToTransitionToNextImage = false;
+      return true; 
+    }    
+    
+    return false; 
   }
 }
 
