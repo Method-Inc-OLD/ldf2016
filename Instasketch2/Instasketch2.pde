@@ -241,7 +241,9 @@ boolean isValidToFetchNextImage(){
     return false;   
   
   if(configManager.isMaster()){
-    return (millis() - imageUpdatedTimestamp) >= configManager.imageUpdateFrequency && configManager.isMaster();  
+    return (millis() - imageUpdatedTimestamp) >= configManager.imageUpdateFrequency 
+      && ldfService.getTimeSinceLastImageUpdate() >= configManager.imageUpdateFrequency 
+        && !isNewImageAvailable();  
   } else{
     if(requestedToFetchNextImage){
       requestedToFetchNextImage = false; 
@@ -361,7 +363,7 @@ void setAppState(AppState state){
   } 
   
   else if(appState == AppState.TransitioningInNewImage){
-    imageUpdatedTimestamp = millis(); 
+    imageUpdatedTimestamp = millis();
   
     if(pixCollection == null)
       pixCollection = createPixCollection(configManager.resolutionX, configManager.resolutionY, (int)width, (int)height, configManager.levelsOfDetail, ldfService.sampleImage, ldfService.getColour());   

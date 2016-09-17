@@ -63,6 +63,7 @@ class LocalService{
     println("initServer: " + config.hostAddress);    
     try{
       server = new Server(MainPApplet(), port, config.hostAddress);  // Start a simple server on a port=
+      introduceSelf(); 
     } catch(Exception e){
       retryCounter = 10;
     }
@@ -92,10 +93,27 @@ class LocalService{
     println("initClient: " + config.getMaster().hostAddress);
     try{
       client = new Client(MainPApplet(), config.getMaster().hostAddress, port);
+      introduceSelf(); 
     } catch(Exception e){
       client = null; 
       retryCounter = 500;   
     }
+  }
+  
+  public boolean introduceSelf(){
+    if(server != null && isConnected()){
+      println("SERVER: introduceSelf: writing " + config.piIndex + "\n");
+      try{
+        server.write(config.piIndex + ":HI:" + config.piIndex + "\n");
+      } catch(Exception e){ server = null; } 
+    } else if(client != null && isConnected()){
+      println("CLIENT: introduceSelf: writing " + config.piIndex + "\n");
+      try{
+        client.write(config.piIndex + ":HI:" + config.piIndex + "\n");        
+      } catch(Exception e){ client = null; } 
+    }        
+    
+    return true; 
   }
   
   public boolean updatePairsOfNewImageId(String imageId, int imageNumber){
@@ -241,6 +259,11 @@ class LocalService{
         p.currentAction = int(data);
         setRequestedToTransitionToNextImage(true); 
       }
+    }
+    
+    /*** HI **/ 
+    else if(command.equals("HI")){
+      config.getPairWithIndex(clientIndex);      
     }
   }
   
