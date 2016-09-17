@@ -6,8 +6,7 @@ import java.util.Enumeration;
 
 public class ConfigManager{  
   
-  public int piIndex = -1; 
-  public String name = "";  
+  public int piIndex = -1;  
   
   /** how frequently to update the image **/ 
   public long imageUpdateFrequency = 300000; 
@@ -228,10 +227,10 @@ public class ConfigManager{
   
   void initFromFile(){
     try{
-      JSONObject json = loadJSONObject("/home/pi/instacolour_config.json");
+      //JSONObject json = loadJSONObject("/home/pi/instacolour_config.json");
+      JSONObject json = loadJSONObject("/data/instacolour_config.json");
       if(json != null){
         piIndex = json.getInt("pi_index");
-        name = json.getString("name");
         println("FOUND CONFIG FILE - PI INDEX = " + piIndex);
       }
     } catch(Exception e){
