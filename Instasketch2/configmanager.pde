@@ -232,10 +232,12 @@ public class ConfigManager{
       if(json != null){
         piIndex = json.getInt("pi_index");
         name = json.getString("name");
+        println("FOUND CONFIG FILE - PI INDEX = " + piIndex);
       }
     } catch(Exception e){
       piIndex = 0;
-      name = "fallback_instacolour0";  
+      name = "fallback_instacolour0"; 
+      println("Couldn't find /home/pi/instacolour_config.json - reverting to defaults");
     }        
   }
   
