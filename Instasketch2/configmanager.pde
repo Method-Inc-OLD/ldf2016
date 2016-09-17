@@ -316,6 +316,16 @@ public class ConfigManager{
   public Pair getPairAtIndex(int i){
     return (Pair)this.pairs.get(i);   
   }
+  
+  public Pair getPairWithHostAddress(String ipAddress){
+    for(int i=0; i<pairs.size(); i++){
+      if(((Pair)pairs.get(i)).hostAddress.equals(ipAddress)){
+        return (Pair)pairs.get(i);   
+      }
+    }
+    
+    return null; 
+  }
 }
 
 class Pair{
@@ -324,14 +334,13 @@ class Pair{
   public String hostAddress = "";  
   
   public String currentImageId = "";
-  public int currentImageNumber = 0;   
   public int currentAnimationState = -1;
   
   public int currentAction = -1; 
   
   public String currentMessage = "";
   
-  private boolean waitingForImage = false;
+  private boolean waitingForImage = false;    
   
   public Pair(){}
   
