@@ -131,7 +131,7 @@ class LocalService{
       server.write(config.piIndex + ":IMAGEID:" + imageId + ":IMAGENUM:" + imageNumber + "\n");  
     } else if(client != null && isConnected()){
       println("CLIENT: NEW IMAGE ID: writing " + config.piIndex + ":IMAGEID:" + imageId + ":IMAGENUM:" + imageNumber + "\n");      
-      client.write(config.piIndex + ":IMAGEID:" + imageId + "\n");
+      client.write(config.piIndex + ":IMAGEID:" + imageId + ":IMAGENUM:" + imageNumber + "\n");
     }        
     
     return true; 
