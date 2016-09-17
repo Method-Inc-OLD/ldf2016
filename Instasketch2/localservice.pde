@@ -241,9 +241,7 @@ class LocalService{
       p.currentImageNumber = imageNumber; 
       if(isServer()){
         p.waitingForImage = false;   
-      } else{
-        p.currentAction = -1;  
-      }
+      } 
     }
     
     /*** ANIMSTATE **/ 
