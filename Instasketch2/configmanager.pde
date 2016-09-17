@@ -228,15 +228,14 @@ public class ConfigManager{
   void initFromFile(){
     try{
       //JSONObject json = loadJSONObject("/home/pi/instacolour_config.json");
-      JSONObject json = loadJSONObject("/data/instacolour_config.json");
+      JSONObject json = loadJSONObject("data/instacolour_config.json");
       if(json != null){
         piIndex = json.getInt("pi_index");
         println("FOUND CONFIG FILE - PI INDEX = " + piIndex);
       }
     } catch(Exception e){
       piIndex = 0;
-      name = "fallback_instacolour0"; 
-      println("Couldn't find /home/pi/instacolour_config.json - reverting to defaults");
+      println("Couldn't find data/instacolour_config.json - reverting to defaults");
     }        
   }
   
