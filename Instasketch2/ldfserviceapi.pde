@@ -81,7 +81,9 @@ class LDFServiceAPI{
     
     try{
       responseJSON = loadJSONObject(url);
-    } catch(Exception e){}
+    } catch(Exception e){
+      println("Exception while trying to get image details " + e.getMessage()); 
+    }
     
     if(responseJSON == null){
       setFetchingImage(false);
@@ -91,12 +93,33 @@ class LDFServiceAPI{
       
     imageDetails = new ImageDetails(responseJSON.getJSONObject("next_image"), configManager.piIndex);         
     
+    boolean successfullyDownloadedImage = false; 
+    
     try{
-      fetchAndSetImage(imageDetails);
-      fetchAndSetColoursiedImage(imageDetails);
+      successfullyDownloadedImage = fetchAndSetImage(imageDetails);  
     } catch(Exception e){
-      setFetchingImage(false);
+      println("Exception while calling fetchAndSetImage " + e.getMessage());
+      successfullyDownloadedImage = false; 
+    }
+    
+    if(!successfullyDownloadedImage){
       onImageFetchFailed(this);
+      setFetchingImage(false);
+      return;  
+    }
+    
+    boolean successfullyDownloadedColourisedImage = false; 
+    
+    try{      
+      successfullyDownloadedColourisedImage = fetchAndSetColoursiedImage(imageDetails);
+    } catch(Exception e){
+      println("Exception while calling fetchAndSetColoursiedImage " + e.getMessage());
+      successfullyDownloadedColourisedImage = false;
+    }
+    
+    if(!successfullyDownloadedColourisedImage){
+      onImageFetchFailed(this);
+      setFetchingImage(false);      
       return;
     }
     
@@ -136,12 +159,16 @@ class LDFServiceAPI{
     }
   }
   
-  private void fetchAndSetImage(ImageDetails imageDetails){  
+  private boolean fetchAndSetImage(ImageDetails imageDetails){  
     // call the colourise service imageDetails){
     String imageUrl = imageDetails.getImageSrc();
     log("POSTING: " + imageUrl); 
     
     PImage image = loadImage(imageUrl, "jpg");
+    
+    if(image == null){
+      return false;   
+    }
     
     // resize image to fill fit the screen 
     float imageScale = 1.0f;   
@@ -177,14 +204,21 @@ class LDFServiceAPI{
     fullColourImage.updatePixels();  
     
     println("finished fetchAndSetImage"); 
+    
+    return true; 
   }
   
-  private void fetchAndSetColoursiedImage(ImageDetails imageDetails){
+  private boolean fetchAndSetColoursiedImage(ImageDetails imageDetails){
     // call the colourise service 
     String colouriseUrl = URL_COLOURISED_IMAGE + "?image_url=" + imageDetails.getImageSrc() + "&colours=5" + "&swatch_index=" + configManager.piIndex + "&image_id=" + imageDetails.getImageId();
     log("POSTING: " + colouriseUrl); 
     
     PImage image = loadImage(colouriseUrl, "jpg");
+    
+    if(image == null){
+      println("Error occured while trying to pull down latest image");
+      return false;   
+    }
     
     // resize image to fill fit the screen 
     float imageScale = 1.0f;   
@@ -220,5 +254,6 @@ class LDFServiceAPI{
     colourisedImage.updatePixels();  
     
     println("Finished fetchAndSetColoursiedImage"); 
+    return true; 
   }
 }
