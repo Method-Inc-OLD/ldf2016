@@ -123,8 +123,8 @@ class LocalService{
       
       // flag waiting for update from all images 
       for(int i=0; i<config.pairs.size(); i++){
-          Pair clientPair = (Pair)config.pairs.get(i); 
-          clientPair.waitingForImage = true; 
+          Pair clientPair = (Pair)config.pairs.get(i);                    
+          clientPair.setWaitingForImage(true); 
       }
       
       println("SERVER: NEW IMAGE ID: writing " + config.piIndex + ":IMAGEID:" + imageId + ":IMAGENUM:" + imageNumber + "\n");      
@@ -235,12 +235,12 @@ class LocalService{
       Pair p = config.getPairWithIndex(clientIndex);
       p.hostAddress = ipAddress;
       
-      println("Updating Pair " + p.index + " image id");
+      println("Updating Pair " + p.index + " image id " + data);
       
       p.currentImageId = data;
       p.currentImageNumber = imageNumber; 
       if(isServer()){
-        p.waitingForImage = false;   
+        p.setWaitingForImage(false);   
       } 
     }
     

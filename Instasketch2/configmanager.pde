@@ -324,13 +324,14 @@ class Pair{
   public String hostAddress = "";  
   
   public String currentImageId = "";
-  public int currentImageNumber = 0; 
-  public boolean waitingForImage = false;
+  public int currentImageNumber = 0;   
   public int currentAnimationState = -1;
   
   public int currentAction = -1; 
   
   public String currentMessage = "";
+  
+  private boolean waitingForImage = false;
   
   public Pair(){}
   
@@ -341,5 +342,15 @@ class Pair{
   public Pair(int index, String hostAddress){
     this.index = index; 
     this.hostAddress = hostAddress; 
+  }
+  
+  synchronized boolean isWaitingForImage(){
+    return waitingForImage;   
+  }
+  
+  synchronized void setWaitingForImage(boolean waiting){
+    waitingForImage = waiting;  
+    
+    println(index + (waitingForImage ? " is waiting for image" : " not waiting for image")); 
   }
 }

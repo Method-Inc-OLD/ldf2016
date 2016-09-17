@@ -256,15 +256,14 @@ boolean isValidToFetchNextImage(){
 
 boolean isValidToTransitionInNewImage(){
   if(getAnimationState() != AnimationState.TransitionOut){
-    println("isValidToTransitionInNewImage = FALSE - AnimState = TransitionIn"); 
+    //println("isValidToTransitionInNewImage = FALSE - AnimState = TransitionIn"); 
     return false;   
   }
   
   if(configManager.isMaster()){
     for(int i=0; i<configManager.getPairCount(); i++){
       Pair p = configManager.getPairAtIndex(i); 
-      if(p.waitingForImage){ 
-        println("Waiting for " + p.index + " to fetching the latest image");
+      if(p.isWaitingForImage()){ 
         return false;   
       }
       
