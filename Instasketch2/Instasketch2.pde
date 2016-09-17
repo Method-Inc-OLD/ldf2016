@@ -86,8 +86,8 @@ void asyncInitConfigManager(){
 }
 
 void initProximityDetector(){  
-  proximityDetector = new MockProximityDetector();  
-  //proximityDetector = new UltrasonicProximityDetector();
+  //proximityDetector = new MockProximityDetector();  
+  proximityDetector = new UltrasonicProximityDetector();
   
   thread("_initProximityDetector"); 
 }
