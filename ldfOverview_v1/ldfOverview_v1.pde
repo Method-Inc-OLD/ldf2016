@@ -20,7 +20,7 @@ Animator animator;
 Sensor sensor;
 
 void setup(){
-  size( 720, 480, P2D );
+  size( 720, 480 );
   noCursor();
   //size( 800, 400, P2D);
   //size( 1200, 800, P2D );

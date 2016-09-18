@@ -39,7 +39,7 @@ class Generator{
     
      Collections.sort( colours, new CompareByHue() );
           
-     PGraphics pg = createGraphics( width, height, P2D );
+     PGraphics pg = createGraphics( width, height );
      pg.beginDraw();
     
      pg.background(0);
@@ -62,7 +62,7 @@ class Generator{
     
     Collections.sort( colours, new CompareByHue() );
     
-    PGraphics pg = createGraphics( width, height, P2D );
+    PGraphics pg = createGraphics( width, height );
     pg.beginDraw();
     
     pg.background(0);
