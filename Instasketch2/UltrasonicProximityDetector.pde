@@ -50,7 +50,7 @@ class UltrasonicProximityDetector extends ProximityDetector {
     
     previousReading = rawDistance;
     
-    //println("rawDistance " + rawDistance); 
+    println("rawDistance " + rawDistance); 
     
     updateDistance(rawDistance);
 
