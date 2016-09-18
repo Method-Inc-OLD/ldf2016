@@ -4,13 +4,13 @@ float pingInterval = 300000;
 int mediumLevels = 20;
 int farLevels = 10;
 boolean fromImage = false;
-float transitionSpeed = 0.02;
+float transitionSpeed = 0.03;
 
 boolean loadLocal = false;
 
 boolean shouldSense = true;
-float distNear = 0.3;
-float distMedium = 0.5;
+float distNear = 0.4;
+float distMedium = 0.42;
 
 
 
