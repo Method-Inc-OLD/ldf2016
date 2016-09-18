@@ -52,7 +52,8 @@ class UltrasonicProximityDetector extends ProximityDetector {
 
     lastUpdated = millis(); 
     updating = true; 
-    rawDistance = measureAverage();     
+////    rawDistance = measureAverage();
+    rawDistance = measure();
     
     previousReading = rawDistance;
     updateDistance(rawDistance);

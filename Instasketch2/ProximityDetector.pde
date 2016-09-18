@@ -15,7 +15,9 @@ enum ProximityRange{
   }
 }
 
-class ProximityDetector{
+class ProximityDetector implements Runnable{
+  
+  final long REFRESH_RATE = 100; 
   
   final int QUEUE_SIZE = 1;  
   
@@ -36,6 +38,7 @@ class ProximityDetector{
   ProximityRange currentRange = ProximityRange.Far;  
   
   boolean initilised = false; 
+  boolean running = true; 
   
   ProximityDetector(){
     
@@ -43,6 +46,27 @@ class ProximityDetector{
   
   void init(){
     initilised = true;     
+  }
+  
+  void run(){
+    init(); 
+    
+    while(running){
+      long startFrameTime = System.currentTimeMillis();      
+      
+      update();       
+      
+      long et = System.currentTimeMillis() - startFrameTime;
+      
+      if(et < REFRESH_RATE){
+        long diff = REFRESH_RATE - et;
+        try{
+          Thread.sleep(diff); 
+        } catch(Exception e){
+        
+        }
+      }                          
+    }
   }
   
   public void update(){

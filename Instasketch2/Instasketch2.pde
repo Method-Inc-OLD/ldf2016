@@ -88,13 +88,13 @@ void asyncInitConfigManager(){
 void initProximityDetector(){  
   //proximityDetector = new MockProximityDetector();  
   proximityDetector = new UltrasonicProximityDetector();
-  
-  thread("_initProximityDetector"); 
+    
+  //thread("_initProximityDetector"); 
 }
 
-void _initProximityDetector(){
-  proximityDetector.init();     
-}
+//void _initProximityDetector(){
+//  proximityDetector.init();     
+//}
 
 void initFonts(){
   statusFont = loadFont("courier-12.vlw");    
@@ -268,7 +268,7 @@ boolean isValidToTransitionInNewImage(){
       }
       
       if(p.currentAnimationState == AnimationState.TransitionIn.getValue()){
-        println("Waiting for " + p.index + " to be in the right anim state");
+        //println("Waiting for " + p.index + " to be in the right anim state");
         return false;   
       }
     } 
@@ -286,21 +286,25 @@ boolean isValidToTransitionInNewImage(){
 
 void startPollDistanceThread(){
   println("startPollDistanceThread"); 
-  thread("updateProximityDetector");    
-}
-
-void updateProximityDetector(){  
+  //thread("updateProximityDetector");
   
-  while(true){  
-    int start = millis();     
-    proximityDetector.update();
-    int et = millis() - start; 
-    if(et < 700){
-      delay(700-et);     
-    }
-  }      
+  Thread t = new Thread(proximityDetector);
+  t.start();
 }
 
+//void updateProximityDetector(){  
+  
+//  while(true){  
+//    int start = millis();     
+//    proximityDetector.update();
+//    int et = millis() - start; 
+//    if(et < 500){
+//      delay(500-et);     
+//    }
+//  }      
+//}
+
+// NOT THREAD SAFE 
 void onProximityChanged(ProximityRange currentRange){  
     
 }
@@ -310,7 +314,7 @@ void keyPressed() {
     return;   
   }
   
-  if(keyCode == 78){ // n
+  if(keyCode == 78){ 
     requestNextImage(); 
   } 
 }

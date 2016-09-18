@@ -238,7 +238,7 @@ public class ConfigManager{
         println("FOUND CONFIG FILE - PI INDEX = " + piIndex);
       }
     } catch(Exception e){
-      piIndex = 0;
+      piIndex = 99;
       println("Couldn't find data/instacolour_config.json - reverting to defaults");
     }        
   }
