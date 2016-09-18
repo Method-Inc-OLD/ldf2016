@@ -341,7 +341,7 @@ public class TextAnimator extends Animator{
     graphics.fill(255, 255, 255, alpha);
     graphics.stroke(255, 255, 255, alpha); 
     graphics.textFont(font, size);
-    graphics.textFont(font);
+    //graphics.textFont(font);
     graphics.text(text, graphics.width/2, graphics.height/2);
   }
   
