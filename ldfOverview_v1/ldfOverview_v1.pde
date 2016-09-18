@@ -2,9 +2,9 @@
 float pingInterval = 300000;
 //float pingInterval = 20000;
 int mediumLevels = 20;
-int farLevels = 5;
+int farLevels = 10;
 boolean fromImage = false;
-float transitionSpeed = 0.01;
+float transitionSpeed = 0.02;
 
 boolean loadLocal = false;
 
