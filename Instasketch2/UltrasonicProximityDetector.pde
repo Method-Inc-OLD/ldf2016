@@ -42,17 +42,16 @@ class UltrasonicProximityDetector extends ProximityDetector {
   }
 
   void update() {
-    super.update(); 
-
-    if (!isReady() || !initilised) {
-      return;
-    }        
+    super.update();         
 
     lastUpdated = millis(); 
     updating = true; 
     rawDistance = measure();
     
     previousReading = rawDistance;
+    
+    println("rawDistance " + rawDistance); 
+    
     updateDistance(rawDistance);
 
     updating = false;
@@ -100,9 +99,5 @@ class UltrasonicProximityDetector extends ProximityDetector {
     }
 
     return range;
-  }
-
-  public boolean isReady() {
-    return !updating;
   }
 }  

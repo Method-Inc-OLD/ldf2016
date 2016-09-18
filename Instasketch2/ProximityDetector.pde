@@ -145,10 +145,6 @@ class ProximityDetector implements Runnable{
   public boolean hasChanged(){
     return previousRange != currentRange;   
   }
-  
-  public boolean isReady(){
-    return true;   
-  }
 }
 
 class MockProximityDetector extends ProximityDetector{
