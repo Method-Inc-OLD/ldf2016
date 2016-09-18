@@ -321,7 +321,7 @@ public class TextAnimator extends Animator{
   public float animTime = ALPHA_FADE_OUT_TIME;
   public PFont font;
   public String text = "";
-  public int size = 40;
+  public int size = 45;
   
   public TextAnimator(PFont font, String text){
     this.font = font; 
