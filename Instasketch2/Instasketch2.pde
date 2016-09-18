@@ -33,6 +33,7 @@ int stateChangedCounter = 0;
 
 ConfigManager configManager; 
 
+Thread proximityDetectorThread; 
 ProximityDetector proximityDetector;
 
 LDFServiceAPI ldfService;
@@ -288,8 +289,8 @@ void startPollDistanceThread(){
   println("startPollDistanceThread"); 
   //thread("updateProximityDetector");
   
-  Thread t = new Thread(proximityDetector);
-  t.start();
+  proximityDetectorThread = new Thread(proximityDetector);
+  proximityDetectorThread.start();
 }
 
 //void updateProximityDetector(){  

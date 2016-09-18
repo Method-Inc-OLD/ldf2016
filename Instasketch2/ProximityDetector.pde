@@ -62,9 +62,7 @@ class ProximityDetector implements Runnable{
         long diff = REFRESH_RATE - et;
         try{
           Thread.sleep(diff); 
-        } catch(Exception e){
-        
-        }
+        } catch(Exception e){}
       }                          
     }
   }
@@ -128,7 +126,7 @@ class ProximityDetector implements Runnable{
     for(int i=0; i<distanceQueue.size(); i++){
       total += distanceQueue.get(i);   
     }
-    return total / distanceQueue.size();  
+    return total / (float)distanceQueue.size();  
   }
   
   public void updateDistance(float distance){

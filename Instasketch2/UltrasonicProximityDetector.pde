@@ -6,8 +6,6 @@ class UltrasonicProximityDetector extends ProximityDetector {
   static final int GPIO_TRIGGER = 23; 
   static final int GPIO_ECHO = 24; 
 
-  public float refreshFrequency = 0; 
-
   private float lastUpdated = 0; 
 
   private boolean updating = false;
@@ -46,13 +44,12 @@ class UltrasonicProximityDetector extends ProximityDetector {
   void update() {
     super.update(); 
 
-    if (!isReady() && initilised) {
+    if (!isReady() || !initilised) {
       return;
     }        
 
     lastUpdated = millis(); 
     updating = true; 
-////    rawDistance = measureAverage();
     rawDistance = measure();
     
     previousReading = rawDistance;
@@ -106,6 +103,6 @@ class UltrasonicProximityDetector extends ProximityDetector {
   }
 
   public boolean isReady() {
-    return !updating && (millis() - lastUpdated) >= refreshFrequency;
+    return !updating;
   }
 }  
