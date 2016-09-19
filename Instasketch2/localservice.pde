@@ -269,10 +269,6 @@ class LocalService{
     }
   }  
   
-  private void processPairMessages(Pair p){
-      
-  }
-  
   private void processPairMessage(String ipAddress, String line){
     if(line == null || line.length() == 0){
       return;   
@@ -286,7 +282,7 @@ class LocalService{
     /*** IMAGEID **/ 
     if(command.equals(MSG_IMAGEID)){                  
       if(isClient()){
-        setRequestedToFetchNextImage(true);     
+        setRequestedToFetchNextImage(true, data);     
       }
             
       Pair p = config.getPairWithIndex(clientIndex);

@@ -25,6 +25,7 @@ PFont statusFont;
 float imageUpdatedTimestamp = 0.0f; 
 float lastStateTimestamp = 0.0f;
 boolean requestedToFetchNextImage = false; 
+String requestedToFetchNextImageWithId = "";
 boolean requestedToTransitionToNextImage = false;
 
 AppState appState = AppState.Undefined;
@@ -42,6 +43,7 @@ LocalService pairCommunicationService;
 
 private static PApplet pApplet;
 
+private long requestRetryToFetchImageCountdown = 0; 
 private boolean requestRetryToFetchImage = false; 
 
 public static PApplet MainPApplet(){    
@@ -88,14 +90,8 @@ void asyncInitConfigManager(){
 
 void initProximityDetector(){  
   //proximityDetector = new MockProximityDetector();  
-  proximityDetector = new UltrasonicProximityDetector();
-    
-  //thread("_initProximityDetector"); 
+  proximityDetector = new UltrasonicProximityDetector(); 
 }
-
-//void _initProximityDetector(){
-//  proximityDetector.init();     
-//}
 
 void initFonts(){
   statusFont = loadFont("courier-12.vlw");    
@@ -139,8 +135,11 @@ void onPreDraw(float et){
   }
   
   if(requestRetryToFetchImage){
-    requestRetryToFetchImage = false; 
-    requestNextImage(); 
+    requestRetryToFetchImageCountdown -= et; 
+    if(requestRetryToFetchImageCountdown <= 0){
+      requestRetryToFetchImage = false; 
+      requestNextImage();  
+    }    
   }
 }
 
@@ -225,9 +224,10 @@ void asyncUpdateConfigManager(){
   configManager.update(stateChangedCounter);
 }
 
-void setRequestedToFetchNextImage(boolean val){
+void setRequestedToFetchNextImage(boolean val, String imageId){
   if(getAppState() != AppState.Initilising && getAppState() != AppState.FetchingFirstImage){
     requestedToFetchNextImage = val;   
+    requestedToFetchNextImageWithId = imageId;
   }
 }
 
@@ -239,7 +239,10 @@ void setRequestedToTransitionToNextImage(boolean val){
 
 boolean isValidToFetchNextImage(){
   if(ldfService.isFetchingImage())
-    return false;   
+    return false;  
+    
+  if(requestRetryToFetchImage)
+    return false; 
   
   if(configManager.isMaster()){
     return (millis() - imageUpdatedTimestamp) >= configManager.imageUpdateFrequency 
@@ -293,18 +296,6 @@ void startPollDistanceThread(){
   proximityDetectorThread.start();
 }
 
-//void updateProximityDetector(){  
-  
-//  while(true){  
-//    int start = millis();     
-//    proximityDetector.update();
-//    int et = millis() - start; 
-//    if(et < 500){
-//      delay(500-et);     
-//    }
-//  }      
-//}
-
 // NOT THREAD SAFE 
 void onProximityChanged(ProximityRange currentRange){  
     
@@ -321,7 +312,7 @@ void keyPressed() {
 }
 
 void onImageFetchComplete(LDFServiceAPI caller){ 
-  println("onImageFetchComplete");  
+  println("onImageFetchComplete");      
   
   if(pairCommunicationService != null){
     pairCommunicationService.updatePairsOfNewImageId(ldfService.getImageId(), ldfService.imageCounter);   
@@ -331,6 +322,7 @@ void onImageFetchComplete(LDFServiceAPI caller){
 void onImageFetchFailed(LDFServiceAPI caller){
   println("onImageFetchFailed");
   requestRetryToFetchImage = true; 
+  requestRetryToFetchImageCountdown = REQUEST_IMAGE_DOWNLOAD_RETRY_DELAY; 
 }
 
 boolean isNewImageAvailable(){
@@ -342,7 +334,7 @@ boolean isNewImageAvailable(){
 
 void requestNextImage(){
   println("requestNextImage"); 
-  ldfService.requestNextImage(); 
+  ldfService.requestNextImage(requestedToFetchNextImageWithId); 
 }
 
 AppState getAppState(){

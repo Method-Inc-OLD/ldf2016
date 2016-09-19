@@ -17,7 +17,7 @@ enum ProximityRange{
 
 class ProximityDetector implements Runnable{
   
-  final long REFRESH_RATE = 100; 
+  final long REFRESH_RATE = 200; 
   
   final int QUEUE_SIZE = 1;  
   

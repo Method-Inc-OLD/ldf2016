@@ -27,6 +27,8 @@ class LDFServiceAPI{
   int cachedImageWidth; 
   int cachedImageHeight; 
   
+  String getImageId = null; 
+  
   LDFServiceAPI(int cachedImageWidth, int cachedImageHeight){
     this.cachedImageWidth = cachedImageWidth; 
     this.cachedImageHeight = cachedImageHeight;       
@@ -50,9 +52,15 @@ class LDFServiceAPI{
   }
   
   boolean requestNextImage(){
+    return requestNextImage(null); 
+  }
+  
+  boolean requestNextImage(String imageId){
     if (isFetchingImage()) {
       return false;
     }  
+    
+    getImageId = imageId; 
   
     setFetchingImage(true);   
     thread("asyncFetchNextImage");
@@ -68,13 +76,14 @@ class LDFServiceAPI{
     String url = "";
     
     if(configManager.isMaster()){ // only the MASTER progresses through the queue, the others (SLAVES) just pull down the current image. 
-      url = URL_POP;  
+      url = URL_POP + "?pi_index=" + configManager.piIndex;  
     } else{
-      url = URL_PEEK;
+      if(getImageId != null){
+        url = URL_GET_IMAGE + "?pi_index=" + configManager.piIndex + "&image_id=" + getImageId;
+      } else{
+        url = URL_PEEK + "?pi_index=" + configManager.piIndex;  
+      }      
     }
-    
-    url += "?pi_index=" + configManager.piIndex;    
-         
     log("POSTING: " + url);
     
     JSONObject responseJSON = null; 
@@ -131,6 +140,8 @@ class LDFServiceAPI{
     imageCounter += 1;
     
     onImageFetchComplete(this);
+    
+    getImageId = null; 
     
     setFetchingImage(false);        
   } 
